@@ -1,0 +1,59 @@
+[
+  {
+    "id": "rev_1781788992605",
+    "packId": "p2",
+    "userId": "usr_001",
+    "name": "danik Nkomo test",
+    "avatar": "https://i.pravatar.cc/80?img=5",
+    "rating": 4,
+    "text": "C'etait cool",
+    "createdAt": "2026-06-18"
+  },
+  {
+    "id": "rev_1781774892085",
+    "packId": "off_1781703222738",
+    "userId": "usr_1781774498570",
+    "name": "DANI rivet",
+    "rating": 5,
+    "text": "C'ÉTAIT INCROYABLE ",
+    "createdAt": "2026-06-18"
+  },
+  {
+    "id": "rev_1781769802409",
+    "packId": "off_1781703222738",
+    "userId": "usr_001",
+    "name": "aicha Nkomo test",
+    "avatar": "https://i.pravatar.cc/80?img=5",
+    "rating": 5,
+    "text": "Mon sejour était inoubliable\n",
+    "createdAt": "2026-06-18"
+  },
+  {
+    "id": "rev_1781760300899",
+    "packId": "p2",
+    "userId": "usr_1781609460247",
+    "name": "Vogelo Djoukeng",
+    "rating": 5,
+    "text": "Trop waouh\n",
+    "createdAt": "2026-06-18"
+  },
+  {
+    "id": "rev_1781760289790",
+    "packId": "p2",
+    "userId": "usr_1781609460247",
+    "name": "Vogelo Djoukeng",
+    "rating": 5,
+    "text": "C'est magnifique\n",
+    "createdAt": "2026-06-18"
+  },
+  {
+    "id": "rev_1781759402883",
+    "packId": "off_1781703222738",
+    "userId": "usr_001",
+    "name": "aicha Nkomo test",
+    "avatar": "https://i.pravatar.cc/80?img=5",
+    "rating": 4,
+    "text": "C'était trop bien",
+    "createdAt": "2026-06-18"
+  }
+]

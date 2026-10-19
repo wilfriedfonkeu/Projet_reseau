@@ -1,0 +1,21 @@
+{
+  "custom": [
+    {
+      "id": "off_1781703222738",
+      "location": "Kribi",
+      "lat": 2.9395,
+      "lng": 9.9104,
+      "name": "PLAGE DU GRAND BATANGA",
+      "category": "Détente",
+      "price": 152000,
+      "duration": "3 Jours",
+      "desc": "\nImaginez une étendue infinie de sable fin aux reflets d'or et d'ambre, caressée par une eau turquoise et délicieusement tiède tout au long de l'année. À Grand Batanga, le temps semble suspendre son vol. Des cocotiers majestueux, chargés de fruits, s'inclinent avec une élégance rare vers l'océan, créant des recoins d'ombre parfaits pour la rêverie. Marcher sur ce rivage au moment où le soleil plonge à l'horizon, embrasant le ciel de nuances pourpres et orangées, procure une sensation de liberté et de plénitude totale. C'est l'incarnation même de la carte postale paradisiaque.",
+      "image": "/images/agency-uploads/mont-aventure/1781703218595-6o0y70.jpg",
+      "agencyId": "ag2"
+    }
+  ],
+  "hidden": [
+    "p1",
+    "p15"
+  ]
+}

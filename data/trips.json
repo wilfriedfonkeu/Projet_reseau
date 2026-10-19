@@ -1,0 +1,10 @@
+[
+  {
+    "from": "Douala",
+    "to": "Yaoundé",
+    "time": "7H00",
+    "vehicle": "V 010",
+    "price": 15000,
+    "company": "Trans-Cameroun"
+  }
+]
