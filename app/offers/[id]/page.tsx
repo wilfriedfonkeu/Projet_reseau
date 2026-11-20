@@ -331,7 +331,7 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
               <Card className="bg-card">
                 <CardContent className="p-5 text-center">
                   <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{t("proposed_by")}</div>
-                  <img src={agency.logo} alt={agency.name} className="w-16 h-16 mx-auto rounded-full ring-2 ring-border mb-3" />
+                  <img src={(agency.userId === user?.id && user?.avatar) || agency.logo} alt={agency.name} className="w-16 h-16 mx-auto rounded-full object-cover ring-2 ring-border mb-3" />
                   <h4 className="font-bold text-lg text-foreground">{agency.name}</h4>
                   <div className="flex justify-center items-center gap-1 text-xs text-muted-foreground mb-2">
                     <MapPin size={12} /> {agency.city}

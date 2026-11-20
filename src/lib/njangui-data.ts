@@ -21,6 +21,8 @@ export interface GuideData {
   photo?: string;
   paymentMethod?: string;
   commission?: number;
+  price?: number; // tarif journalier du guide (FCFA), fixé lors du contrat
+  userId?: string; // compte utilisateur associé (messagerie)
 }
 
 const GUIDES_FALLBACK: GuideData[] = [
@@ -249,11 +251,110 @@ export const REVIEWS: ReviewData[] = [
 ];
 
 // --- Abonnements ---
-export const SUBSCRIPTION_PLANS = [
-  { id: "monthly", label: "Mensuel", price: 25000, period: "mois", publications: 5, popular: false, save: null },
-  { id: "semester", label: "Semestriel", price: 120000, period: "6 mois", publications: 15, popular: true, save: "30 000 FCFA" },
-  { id: "yearly", label: "Annuel", price: 200000, period: "an", publications: 50, popular: false, save: "100 000 FCFA" },
+export interface SubscriptionPlan {
+  id: string;
+  label: string;
+  price: number;
+  period: string;
+  publications: number;
+  popular: boolean;
+  save: string | null;
+  published: boolean;
+}
+
+export const DEFAULT_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+  { id: "monthly", label: "Mensuel", price: 25000, period: "mois", publications: 5, popular: false, save: null, published: true },
+  { id: "semester", label: "Semestriel", price: 120000, period: "6 mois", publications: 15, popular: true, save: "30 000 FCFA", published: true },
+  { id: "yearly", label: "Annuel", price: 200000, period: "an", publications: 50, popular: false, save: "100 000 FCFA", published: true },
 ];
+
+function normalizeSubscriptionPlan(plan: any): SubscriptionPlan {
+  return {
+    id: String(plan?.id ?? `plan_${Date.now()}`),
+    label: String(plan?.label ?? ""),
+    price: Number(plan?.price) || 0,
+    period: String(plan?.period ?? ""),
+    publications: Number(plan?.publications) || 0,
+    popular: Boolean(plan?.popular),
+    save: plan?.save == null || plan?.save === "" ? null : String(plan.save),
+    published: plan?.published !== false,
+  };
+}
+
+export let SUBSCRIPTION_PLANS: SubscriptionPlan[] = [...DEFAULT_SUBSCRIPTION_PLANS];
+
+let _savedSubscriptionPlans: SubscriptionPlan[] | null = null;
+
+export async function loadSubscriptionPlans(): Promise<void> {
+  try {
+    const res = await fetch("/api/subscription-plans");
+    const data = await res.json();
+    const plans =
+      Array.isArray(data) && data.length > 0
+        ? data.map(normalizeSubscriptionPlan)
+        : [...DEFAULT_SUBSCRIPTION_PLANS];
+    _savedSubscriptionPlans = plans;
+    SUBSCRIPTION_PLANS = plans;
+  } catch {
+    _savedSubscriptionPlans = [...DEFAULT_SUBSCRIPTION_PLANS];
+    SUBSCRIPTION_PLANS = _savedSubscriptionPlans;
+  }
+}
+
+export function getSubscriptionPlans(): SubscriptionPlan[] {
+  return _savedSubscriptionPlans ?? SUBSCRIPTION_PLANS;
+}
+
+export function getPublishedSubscriptionPlans(): SubscriptionPlan[] {
+  return getSubscriptionPlans().filter((p) => p.published !== false);
+}
+
+export async function saveSubscriptionPlan(plan: SubscriptionPlan): Promise<void> {
+  if (!_savedSubscriptionPlans) _savedSubscriptionPlans = getSubscriptionPlans().slice();
+  const normalized = normalizeSubscriptionPlan(plan);
+  _savedSubscriptionPlans.unshift(normalized);
+  SUBSCRIPTION_PLANS = _savedSubscriptionPlans;
+  try {
+    await fetch("/api/subscription-plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(normalized),
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function updateSubscriptionPlan(id: string, updates: Partial<SubscriptionPlan>): Promise<void> {
+  if (!_savedSubscriptionPlans) _savedSubscriptionPlans = getSubscriptionPlans().slice();
+  const idx = _savedSubscriptionPlans.findIndex((p) => p.id === id);
+  if (idx !== -1) _savedSubscriptionPlans[idx] = normalizeSubscriptionPlan({ ..._savedSubscriptionPlans[idx], ...updates, id });
+  SUBSCRIPTION_PLANS = _savedSubscriptionPlans;
+  try {
+    await fetch("/api/subscription-plans", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...updates }),
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function removeSubscriptionPlan(id: string): Promise<void> {
+  if (!_savedSubscriptionPlans) _savedSubscriptionPlans = getSubscriptionPlans().slice();
+  _savedSubscriptionPlans = _savedSubscriptionPlans.filter((p) => p.id !== id);
+  SUBSCRIPTION_PLANS = _savedSubscriptionPlans.length > 0 ? _savedSubscriptionPlans : [...DEFAULT_SUBSCRIPTION_PLANS];
+  try {
+    await fetch("/api/subscription-plans", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  } catch {
+    /* ignore */
+  }
+}
 
 // --- Données admin ---
 export const KPIS = [
@@ -301,7 +402,9 @@ export interface ReservationData {
   transportPrice?: number;
   transportAgency?: string;
   guideId?: string;
+  guideIds?: string[]; // tous les guides sélectionnés lors de la personnalisation
   guideName?: string;
+  agencyId?: string; // agence propriétaire de l'offre réservée
 }
 
 export const RESERVATIONS: ReservationData[] = [
@@ -419,6 +522,242 @@ export const AFFILIATIONS = [
   { id: "aff3", travelAgency: "CamTrans", touristAgency: "Évasion Cameroun", status: "Refusée", since: "Avr 2026" },
 ];
 
+// --- Partenaires de l'agence (hôteliers & agences de voyages) ---
+export type PartnerType = "hotelier" | "agence-voyages";
+export type PartnerStatus = "Actif" | "En attente" | "Suspendu";
+
+/** Clauses du contrat définies depuis "Mes partenaires" et reprises dans "Mes revenus". */
+export interface PartnerContract {
+  commissionRate: number;   // % prélevé sur les ventes générées avec le partenaire
+  paymentDelay: number;     // délai de règlement en jours
+  durationMonths: number;   // durée du contrat en mois
+  startDate: string;        // date de début (YYYY-MM-DD)
+  notes: string;            // clauses particulières
+  roomPrice?: number;       // Hôtelier : prix d'une nuit (FCFA)
+  roomType?: string;        // Hôtelier : type de chambre
+  tripPrice?: number;       // Agence de voyages : prix d'une place (FCFA)
+  tripLabel?: string;       // Agence de voyages : trajet concerné
+}
+
+export interface PartnerData {
+  id: string;
+  agencyId: string;
+  name: string;
+  type: PartnerType;
+  city: string;
+  contact: string;
+  email: string;
+  phone: string;
+  status: PartnerStatus;
+  contract: PartnerContract;
+  createdAt: string;
+  userId?: string; // compte utilisateur associé (messagerie)
+}
+
+const PARTNERS_FALLBACK: PartnerData[] = [
+  {
+    id: "par1", agencyId: "ag1", name: "L'Hôtel Ilomba", type: "hotelier", city: "Kribi",
+    contact: "Mme Ngono", email: "contact@hotel-ilomba.cm", phone: "+237 6 99 12 34 56",
+    status: "Actif",
+    contract: { commissionRate: 15, paymentDelay: 30, durationMonths: 12, startDate: "2026-01-15", notes: "Annulation gratuite jusqu'à J-7. Petit-déjeuner inclus.", roomPrice: 55000, roomType: "Chambre Supérieure" },
+    createdAt: "2026-01-15",
+  },
+  {
+    id: "par2", agencyId: "ag1", name: "L'Hôtel de l'Artisanat", type: "hotelier", city: "Foumban",
+    contact: "M. Mbarga", email: "artisanat.foumban@example.cm", phone: "+237 6 77 88 99 00",
+    status: "Actif",
+    contract: { commissionRate: 12, paymentDelay: 15, durationMonths: 6, startDate: "2026-03-01", notes: "Chambres décorées d'œuvres Bamoun, petit-déjeuner inclus.", roomPrice: 35000, roomType: "Chambre Standard" },
+    createdAt: "2026-03-01",
+  },
+  {
+    id: "par3", agencyId: "ag1", name: "Star Voyages", type: "agence-voyages", city: "Douala",
+    contact: "Mme Aïcha Nkomo", email: "commercial@starvoyages.cm", phone: "+237 6 55 44 33 22",
+    status: "Actif",
+    contract: { commissionRate: 8, paymentDelay: 7, durationMonths: 12, startDate: "2026-01-01", notes: "Transport inclus dans les packs balnéaires, 2 départs par jour.", tripPrice: 5000, tripLabel: "Douala → Kribi" },
+    createdAt: "2026-01-01",
+  },
+  {
+    id: "par4", agencyId: "ag1", name: "Trans-Cameroun", type: "agence-voyages", city: "Yaoundé",
+    contact: "M. Jean-Marc Beti", email: "partenariat@trans-cameroun.cm", phone: "+237 6 33 22 11 00",
+    status: "En attente",
+    contract: { commissionRate: 10, paymentDelay: 15, durationMonths: 6, startDate: "2026-05-01", notes: "Bus climatisés, validation du contrat en cours.", tripPrice: 4500, tripLabel: "Douala → Kribi" },
+    createdAt: "2026-05-01",
+  },
+  {
+    id: "par5", agencyId: "ag2", name: "Le Mountain Hotel", type: "hotelier", city: "Buea",
+    contact: "M. Ewome", email: "reservation@mountain-hotel.cm", phone: "+237 6 12 34 56 78",
+    status: "Actif",
+    contract: { commissionRate: 14, paymentDelay: 30, durationMonths: 12, startDate: "2026-02-01", notes: "Point de départ de l'ascension du Mont Cameroun.", roomPrice: 50000, roomType: "Chambre Supérieure" },
+    createdAt: "2026-02-01",
+  },
+];
+
+let _savedPartners: PartnerData[] | null = null;
+
+export async function loadPartners(): Promise<void> {
+  if (_savedPartners !== null) return;
+  try {
+    const res = await fetch("/api/partners");
+    const data = await res.json();
+    _savedPartners = Array.isArray(data) ? data : PARTNERS_FALLBACK;
+  } catch {
+    _savedPartners = PARTNERS_FALLBACK;
+  }
+}
+
+export function getAllPartners(): PartnerData[] {
+  return _savedPartners ?? PARTNERS_FALLBACK;
+}
+
+export function getPartnersByAgency(agencyId: string): PartnerData[] {
+  return getAllPartners().filter(p => p.agencyId === agencyId);
+}
+
+export async function savePartner(partner: PartnerData): Promise<void> {
+  if (!_savedPartners) _savedPartners = getAllPartners().slice();
+  _savedPartners.unshift(partner);
+  try {
+    await fetch("/api/partners", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(partner),
+    });
+  } catch { /* ignore */ }
+}
+
+export async function updatePartner(id: string, updates: Partial<PartnerData>): Promise<void> {
+  if (!_savedPartners) _savedPartners = getAllPartners().slice();
+  const idx = _savedPartners.findIndex(p => p.id === id);
+  if (idx !== -1) _savedPartners[idx] = { ..._savedPartners[idx], ...updates };
+  try {
+    await fetch("/api/partners", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...updates }),
+    });
+  } catch { /* ignore */ }
+}
+
+export async function removePartner(id: string): Promise<void> {
+  if (_savedPartners) _savedPartners = _savedPartners.filter(p => p.id !== id);
+  try {
+    await fetch("/api/partners", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  } catch { /* ignore */ }
+}
+
+/** Chiffre généré et commission due selon les clauses du contrat du partenaire. */
+export function getPartnerRevenue(partner: PartnerData, reservations: ReservationData[]) {
+  let generated = 0;
+  let count = 0;
+  for (const r of reservations) {
+    const name = partner.name.trim().toLowerCase();
+    const matches = partner.type === "hotelier"
+      ? r.hotelName?.trim().toLowerCase() === name
+      : r.transportAgency?.trim().toLowerCase() === name;
+    if (!matches) continue;
+    generated += partner.type === "hotelier" ? (r.hotelPrice ?? 0) : (r.transportPrice ?? 0);
+    count += 1;
+  }
+  const commission = Math.round(generated * ((partner.contract?.commissionRate ?? 0) / 100));
+  return { generated, commission, net: generated - commission, count };
+}
+
+/** Champs de tarification propres aux offres (en plus des champs communs des packs). */
+interface OfferPricing {
+  hotelPartnerId?: string;
+  transportPartnerId?: string;
+  hotelPartnerIds?: string[];
+  transportPartnerIds?: string[];
+  guideIds?: string[];
+  agencyMargin?: number;
+}
+
+/** Une ligne de revenu : montant confié au partenaire, taux de commission et commission reversée à l'agence. */
+export interface RevenueLine {
+  name: string;
+  rate: number;       // taux de commission (%)
+  base: number;       // montant de la prestation confiée au partenaire (FCFA)
+  commission: number; // commission reversée à l'agence (FCFA)
+}
+
+/** Revenu de l'agence sur une réservation : commissions par partenaire + part définie dans l'offre. */
+export interface ReservationRevenue {
+  hotel: RevenueLine;
+  transport: RevenueLine;
+  guide: RevenueLine;
+  agencyMargin: number; // part de l'agence définie dans l'offre (FCFA)
+  total: number;        // total des revenus de l'agence sur cette réservation
+}
+
+export function getReservationRevenue(r: ReservationData): ReservationRevenue {
+  const offer = getAllPacks().find(p => p.id === r.packId) as OfferPricing | undefined;
+  const partners = getAllPartners();
+
+  // Hôtelier : priorité au partenaire réellement choisi lors de la réservation
+  // (nom), puis aux IDs de l'offre (sélection multiple, puis ancien ID unique).
+  const hotelPartner =
+    partners.find(p => p.type === "hotelier" && p.name.trim().toLowerCase() === (r.hotelName ?? "").trim().toLowerCase()) ||
+    (offer?.hotelPartnerIds?.length ? partners.find(p => p.type === "hotelier" && offer.hotelPartnerIds!.includes(p.id)) : undefined) ||
+    (offer?.hotelPartnerId ? partners.find(p => p.type === "hotelier" && p.id === offer.hotelPartnerId) : undefined);
+
+  // Agence de voyages : même logique (choix réservation → IDs de l'offre).
+  const transportPartner =
+    partners.find(p => p.type === "agence-voyages" && p.name.trim().toLowerCase() === (r.transportAgency ?? "").trim().toLowerCase()) ||
+    (offer?.transportPartnerIds?.length ? partners.find(p => p.type === "agence-voyages" && offer.transportPartnerIds!.includes(p.id)) : undefined) ||
+    (offer?.transportPartnerId ? partners.find(p => p.type === "agence-voyages" && p.id === offer.transportPartnerId) : undefined);
+
+  // Guides : sélectionnés lors de la réservation, sinon ceux liés à l'offre
+  const guideIds = r.guideIds?.length
+    ? r.guideIds
+    : (r.guideId ? [r.guideId] : (offer?.guideIds ?? []));
+  const guides = guideIds
+    .map(id => getAllGuides().find(g => g.id === id))
+    .filter((g): g is GuideData => Boolean(g));
+
+  const hotelBase = r.hotelPrice ?? 0;
+  const transportBase = r.transportPrice ?? 0;
+  const guideBase = guides.reduce((sum, g) => sum + (g.price ?? 0) * (r.days || 1), 0);
+  const guideCommission = guides.reduce(
+    (sum, g) => sum + Math.round((g.price ?? 0) * (r.days || 1) * ((g.commission ?? 10) / 100)), 0
+  );
+
+  const hotelRate = hotelPartner?.contract?.commissionRate ?? 0;
+  const transportRate = transportPartner?.contract?.commissionRate ?? 0;
+  const guideRate = guides[0]?.commission ?? 10; // 10% par défaut si aucun taux n'a été défini au contrat
+
+  const hotel: RevenueLine = {
+    name: hotelPartner?.name || r.hotelName || "—",
+    rate: hotelRate,
+    base: hotelBase,
+    commission: Math.round(hotelBase * hotelRate / 100),
+  };
+  const transport: RevenueLine = {
+    name: transportPartner?.name || r.transportAgency || "—",
+    rate: transportRate,
+    base: transportBase,
+    commission: Math.round(transportBase * transportRate / 100),
+  };
+  const guideLine: RevenueLine = {
+    name: guides.length ? guides.map(g => g.name).join(", ") : (r.guideName || "—"),
+    rate: guideRate,
+    base: guideBase,
+    commission: guideCommission,
+  };
+  const agencyMargin = Number(offer?.agencyMargin ?? 0) || 0;
+
+  return {
+    hotel,
+    transport,
+    guide: guideLine,
+    agencyMargin,
+    total: hotel.commission + transport.commission + guideLine.commission + agencyMargin,
+  };
+}
+
 // --- Packs composites ---
 export const COMPOSITE_PACKS = [
   {
@@ -477,8 +816,28 @@ export function getAllPacks() {
   return [...(_offlineOffers ?? []), ...PACKS];
 }
 
+function isAgencyAccountActiveById(agencyId?: string): boolean {
+  if (!agencyId || typeof window === "undefined") return true;
+  const agency = AGENCIES.find((a) => a.id === agencyId);
+  if (!agency?.userId) return true;
+  try {
+    const stored = JSON.parse(window.localStorage.getItem("dt_users_db") || "[]") as Array<{ id?: string; accountStatus?: string }>;
+    const user = Array.isArray(stored) ? stored.find((u) => u?.id === agency.userId) : undefined;
+    if (user) return user.accountStatus !== "suspended";
+  } catch {
+    /* ignore */
+  }
+  return true;
+}
+
+export function getActiveAgencies() {
+  return AGENCIES.filter((a) => isAgencyAccountActiveById(a.id));
+}
+
 export function getPublicPacks() {
-  return getAllPacks().filter((p) => !_hiddenIds.includes(p.id));
+  return getAllPacks().filter(
+    (p) => !_hiddenIds.includes(p.id) && isAgencyAccountActiveById(p.agencyId)
+  );
 }
 
 export async function saveCustomOffer(offer: typeof PACKS[0]) {
@@ -575,10 +934,16 @@ export async function loadSavedReservations(): Promise<void> {
   } catch {
     _savedReservations = [];
   }
+  notifyDataChanges();
 }
 
 export function getAllReservations(): ReservationData[] {
-  return [...RESERVATIONS, ...(_savedReservations ?? [])];
+  // Une réservation persistée portant la même référence remplace la réservation intégrée :
+  // cela permet d'annuler ou supprimer aussi les réservations de démonstration.
+  const byRef = new Map<string, ReservationData>();
+  for (const r of RESERVATIONS) byRef.set(r.ref, r);
+  for (const r of (_savedReservations ?? [])) byRef.set(r.ref, r);
+  return Array.from(byRef.values()).filter((r) => !(r as ReservationData & { _deleted?: boolean })._deleted);
 }
 
 export function getReservationsByUser(userId: string): ReservationData[] {
@@ -587,17 +952,53 @@ export function getReservationsByUser(userId: string): ReservationData[] {
 
 export function getReservationsByAgency(agencyId: string): ReservationData[] {
   const packIds = getAllPacks().filter(p => p.agencyId === agencyId).map(p => p.id);
-  return getAllReservations().filter(r => packIds.includes(r.packId));
+  return getAllReservations().filter(r =>
+    (r.agencyId && r.agencyId === agencyId) ||   // réservations récentes : lien direct
+    (!r.agencyId && packIds.includes(r.packId))  // anciennes réservations : repli sur l'offre
+  );
 }
 
 export async function pushReservation(res: ReservationData): Promise<void> {
   if (!_savedReservations) _savedReservations = [];
   _savedReservations.unshift(res);
+  notifyDataChanges();
   try {
     await fetch("/api/reservations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(res),
+    });
+  } catch { /* ignore */ }
+}
+
+/** Annule une réservation (elle ne compte plus dans les revenus). */
+export async function setReservationStatus(res: ReservationData, status: ReservationData["status"]): Promise<void> {
+  const updated = { ...res, status };
+  if (!_savedReservations) _savedReservations = [];
+  const index = _savedReservations.findIndex((r) => r.ref === res.ref);
+  if (index >= 0) _savedReservations[index] = updated;
+  else _savedReservations.push(updated);
+  notifyDataChanges();
+  try {
+    await fetch("/api/reservations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    });
+  } catch { /* ignore */ }
+}
+
+/** Supprime définitivement une réservation de l'agence. */
+export async function deleteReservation(ref: string): Promise<void> {
+  if (!_savedReservations) _savedReservations = [];
+  _savedReservations = _savedReservations.filter((r) => r.ref !== ref);
+  _savedReservations.push({ ref, _deleted: true } as unknown as ReservationData);
+  notifyDataChanges();
+  try {
+    await fetch("/api/reservations", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref }),
     });
   } catch { /* ignore */ }
 }

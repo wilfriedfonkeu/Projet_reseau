@@ -23,6 +23,8 @@ export interface GuideData {
   photo?: string;
   paymentMethod?: string;
   commission?: number;
+  price?: number; // tarif journalier (FCFA)
+  userId?: string; // compte utilisateur associé (messagerie)
 }
 
 async function readGuides(): Promise<GuideData[]> {

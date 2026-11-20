@@ -10,13 +10,58 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs";
-import { getPublicPacks, HOTELS_NEARBY, pushReservation, loadSavedReservations, loadGuides, getAllGuides, loadTrips, getAllTrips, type GuideData } from "@/src/lib/njangui-data";
-import { getCurrentUser } from "@/src/lib/auth-store";
+import {
+  getPublicPacks, HOTELS_NEARBY, pushReservation, loadGuides, getAllGuides,
+  loadTrips, getAllTrips, loadPartners, getPartnersByAgency,
+  type GuideData, type PartnerData,
+} from "@/src/lib/njangui-data";
+import { getCurrentUser, ROLE_REDIRECT } from "@/src/lib/auth-store";
 import { useOffersLoader } from "@/src/hooks/use-offers-loader";
 import { toast } from "sonner";
 import { CheckCircle2, ChevronRight, ChevronLeft, MapPin, Bus, Hotel, Star, User, X, ExternalLink } from "lucide-react";
+
+/** Champs de tarification propres aux offres créées dans « Mes publications ». */
+type Offer = ReturnType<typeof getPublicPacks>[number] & {
+  hotelId?: string;
+  hotelPartnerId?: string;
+  transportPartnerId?: string;
+  hotelPartnerIds?: string[];
+  transportPartnerIds?: string[];
+  guideIds?: string[];
+  agencyMargin?: number;
+  places?: number;
+};
+
+/** Hôtel proposé au touriste : issu d'un partenaire de l'agence qui a publié l'offre. */
+type HotelOption = {
+  id: string;          // id du partenaire (utilisé aussi par la carte)
+  partnerId: string;
+  name: string;
+  city: string;
+  lat: number;
+  lng: number;
+  image?: string;
+  rating?: number;
+  rooms?: number;
+  desc?: string;
+  pricePerNight: number; // prix du contrat (FCFA / nuit)
+  roomType?: string;
+};
+
+/** Trajet proposé au touriste : issu d'un partenaire agence de voyages. */
+type TransportOption = {
+  id: string;          // `${partner.id}::${trip?.vehicle ?? "default"}`
+  partnerId: string;
+  company: string;
+  from: string;
+  to: string;
+  time?: string;
+  vehicle?: string;
+  price: number;       // prix du contrat (FCFA / place)
+  label?: string;
+  status: string;      // statut du contrat partenaire
+};
 
 export default function ReservationWorkflow({ params }: { params: Promise<{ offerId: string }> }) {
   useOffersLoader();
@@ -31,32 +76,137 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
   ];
   const resolvedParams = use(params);
   const router = useRouter();
-  const pack = getPublicPacks().find((p) => p.id === resolvedParams.offerId);
+  const pack = getPublicPacks().find((p) => p.id === resolvedParams.offerId) as Offer | undefined;
 
   const [step, setStep] = useState(1);
   const [participants, setParticipants] = useState(1);
   const [days, setDays] = useState(1);
-  const [date, setDate] = useState("");
   const [dateArrivee, setDateArrivee] = useState("");
   const [dateDepart, setDateDepart] = useState("");
-  
-  const [selectedHotel, setSelectedHotel] = useState<string | null>(null);
-  const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
+
+  // Options limitées aux partenaires de l'agence ayant publié l'offre
+  const [hotelOptions, setHotelOptions] = useState<HotelOption[]>([]);
+  const [transportOptions, setTransportOptions] = useState<TransportOption[]>([]);
+  const [guideOptions, setGuideOptions] = useState<GuideData[]>([]);
+
+  const [selectedHotel, setSelectedHotel] = useState<string | null>(null); // id du partenaire hôtelier
+  const [selectedTransport, setSelectedTransport] = useState<string | null>(null); // id de l'option transport
+  const [selectedGuides, setSelectedGuides] = useState<string[]>([]); // ids des guides
   const [paymentMethod, setPaymentMethod] = useState("card");
-  const [availableGuides, setAvailableGuides] = useState<GuideData[]>([]);
-  const [selectedGuide, setSelectedGuide] = useState<string | null>(null);
-  const [detailHotel, setDetailHotel] = useState<typeof HOTELS_NEARBY[0] | null>(null);
+  const [detailHotel, setDetailHotel] = useState<HotelOption | null>(null);
 
   useEffect(() => {
     if (!pack) return;
-    loadTrips();
-    loadGuides().then(() => {
-      const agencyId = (pack as any)?.agencyId;
-      if (agencyId) {
-        setAvailableGuides(getAllGuides().filter(g => g.agencyId === agencyId));
-      }
+    let cancelled = false;
+
+    Promise.all([loadTrips(), loadGuides(), loadPartners()]).then(() => {
+      if (cancelled) return;
+
+      const agencyId = pack.agencyId;
+      const location = (pack.location ?? "").toLowerCase();
+      const partners = getPartnersByAgency(agencyId);
+      const allTrips = getAllTrips();
+
+      // Choix multiples définis dans « Mes publications » : seuls ces éléments
+      // sont proposés au touriste. Repli sur les offres anciennes (ID unique).
+      // Un tableau vide signifie « aucun choix » ; l'absence de champ vient des anciennes offres.
+      const allowedHotelIds = pack.hotelPartnerIds ?? null;
+      const allowedTransportIds = pack.transportPartnerIds ?? null;
+      const allowedGuideIds = pack.guideIds ?? null;
+
+      // Hôteliers partenaires : on réutilise la fiche HOTELS_NEARBY quand elle existe
+      // (photo, note, carte), mais le prix vient toujours du contrat du partenaire.
+      const hotels: HotelOption[] = partners
+        .filter((p: PartnerData) => p.type === "hotelier" && (!allowedHotelIds || allowedHotelIds.includes(p.id)))
+        .map((p: PartnerData) => {
+          const known = HOTELS_NEARBY.find(h => h.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+          return {
+            id: p.id,
+            partnerId: p.id,
+            name: p.name,
+            city: known?.city ?? p.city,
+            lat: known?.lat ?? 4.05,
+            lng: known?.lng ?? 9.7,
+            image: known?.image,
+            rating: known?.rating,
+            rooms: known?.rooms,
+            desc: known?.desc,
+            pricePerNight: Number(p.contract?.roomPrice ?? known?.pricePerNight ?? 0) || 0,
+            roomType: p.contract?.roomType,
+          };
+        });
+
+      // Agences de voyages partenaires : trajets vers la destination de l'offre,
+      // avec le prix unitaire défini au contrat (et non le prix indicatif du trajet).
+      const transports: TransportOption[] = partners
+        .filter((p: PartnerData) => p.type === "agence-voyages" && (!allowedTransportIds || allowedTransportIds.includes(p.id)))
+        .flatMap((p: PartnerData): TransportOption[] => {
+          const matchingTrips = allTrips.filter(
+            trip => trip.company.trim().toLowerCase() === p.name.trim().toLowerCase() &&
+                    trip.to.toLowerCase() === location
+          );
+          const unitPrice = Number(p.contract?.tripPrice ?? 0) || 0;
+          if (matchingTrips.length === 0) {
+            return [{
+              id: `${p.id}::default`,
+              partnerId: p.id,
+              company: p.name,
+              from: "—",
+              to: pack.location ?? "",
+              time: undefined,
+              vehicle: undefined,
+              price: unitPrice,
+              label: p.contract?.tripLabel,
+              status: p.status,
+            }];
+          }
+          return matchingTrips.map((trip, index) => ({
+            id: `${p.id}::${trip.vehicle}::${index}`,
+            partnerId: p.id,
+            company: p.name,
+            from: trip.from,
+            to: trip.to,
+            time: trip.time,
+            vehicle: trip.vehicle,
+            price: unitPrice,
+            label: p.contract?.tripLabel,
+            status: p.status,
+          }));
+        });
+
+      const guides = getAllGuides().filter(g => g.agencyId === agencyId && (!allowedGuideIds || allowedGuideIds.includes(g.id)));
+
+      setHotelOptions(hotels);
+      setTransportOptions(transports);
+      setGuideOptions(guides);
+
+      // Sélections initiales : partenaires liés à l'offre, sinon valeurs par défaut raisonnables
+      const initialHotel =
+        (allowedHotelIds ? hotels.find(h => allowedHotelIds.includes(h.partnerId)) : null) ||
+        (pack.hotelPartnerId && hotels.find(h => h.partnerId === pack.hotelPartnerId)) ||
+        (pack.hotelId && hotels.find(h => h.id === pack.hotelId)) ||
+        null;
+      const initialTransport =
+        (allowedTransportIds ? transports.find(o => allowedTransportIds.includes(o.partnerId)) : null) ||
+        (pack.transportPartnerId && transports.find(o => o.partnerId === pack.transportPartnerId)) ||
+        transports.find(o => o.status === "Actif") ||
+        transports[0] ||
+        null;
+      setSelectedHotel(initialHotel?.partnerId ?? null);
+      setSelectedTransport(initialTransport?.id ?? null);
+      setSelectedGuides(guides.filter(g => (pack.guideIds ?? []).includes(g.id)).map(g => g.id));
+
+      // Durée par défaut de l'offre (ex. "4 jours" -> 4)
+      const parsedDuration = parseInt(String(pack.duration ?? ""), 10);
+      if (!Number.isNaN(parsedDuration) && parsedDuration > 0) setDays(parsedDuration);
     });
-  }, [pack?.id]);
+
+    return () => { cancelled = true; };
+  }, [
+    pack?.id, pack?.agencyId, pack?.location,
+    pack?.hotelPartnerId, pack?.transportPartnerId,
+    pack?.hotelPartnerIds?.join(","), pack?.transportPartnerIds?.join(","), pack?.guideIds?.join(","),
+  ]);
 
   if (!pack) {
     return (
@@ -70,18 +220,24 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
     );
   }
 
-  const hotelObj = HOTELS_NEARBY.find(h => h.id === selectedHotel);
-  const tripsToDest = getAllTrips().filter(t => t.to.toLowerCase() === (pack as any).location?.toLowerCase());
-  const tripObj = tripsToDest.find(t => t.vehicle === selectedTrip);
+  const hotelObj = hotelOptions.find(h => h.partnerId === selectedHotel);
+  const tripObj = transportOptions.find(o => o.id === selectedTransport);
+  const chosenGuides = guideOptions.filter(g => selectedGuides.includes(g.id));
 
-  // Calculate total price
   const computedDays = dateArrivee && dateDepart
     ? Math.max(1, Math.round((new Date(dateDepart).getTime() - new Date(dateArrivee).getTime()) / (1000 * 60 * 60 * 24)))
     : days;
-  const basePrice = pack.price * participants * computedDays;
-  const hotelPrice = hotelObj ? hotelObj.pricePerNight * computedDays * participants : 0;
-  const transportPrice = tripObj ? tripObj.price * participants * 2 : 0;
-  const totalPrice = basePrice + hotelPrice + transportPrice;
+
+  // Mêmes règles de calcul que « Mes publications » :
+  //   hébergement = prix chambre (contrat) × jours
+  //   transport   = prix place (contrat) × participants
+  //   guides      = Σ tarif journalier × jours
+  //   part agence = marge fixe définie dans l'offre
+  const roomCost = hotelObj ? hotelObj.pricePerNight * computedDays : 0;
+  const tripCost = tripObj ? tripObj.price * participants : 0;
+  const guideCost = chosenGuides.reduce((sum, g) => sum + (g.price ?? 0) * computedDays, 0);
+  const agencyMargin = Number(pack.agencyMargin ?? pack.price) || 0;
+  const totalPrice = roomCost + tripCost + guideCost + agencyMargin;
 
   const nextStep = () => {
     if (step === 1 && (!dateArrivee || !dateDepart || participants < 1 || computedDays < 1)) return toast.error(t("fill_travel_details_error"));
@@ -106,15 +262,19 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
       totalPrice,
       createdAt: new Date().toISOString().split("T")[0],
       hotelName: hotelObj?.name,
-      hotelPrice: hotelObj ? hotelObj.pricePerNight * computedDays * participants : undefined,
-      transportLabel: tripObj ? `${tripObj.from} → ${tripObj.to} ${tripObj.time}` : undefined,
-      transportPrice: tripObj ? tripObj.price * participants * 2 : undefined,
+      hotelPrice: roomCost || undefined,
+      transportLabel: tripObj
+        ? `${tripObj.from} → ${tripObj.to}${tripObj.time ? ` ${tripObj.time}` : ""}`
+        : undefined,
+      transportPrice: tripCost || undefined,
       transportAgency: tripObj?.company,
-      guideId: selectedGuide ?? undefined,
-      guideName: selectedGuide ? availableGuides.find(g => g.id === selectedGuide)?.name : undefined,
+      guideId: chosenGuides[0]?.id,
+      guideIds: chosenGuides.map(g => g.id),
+      guideName: chosenGuides.map(g => g.name).join(", ") || undefined,
+      agencyId: pack.agencyId,
     });
     toast.success(t("reservation_confirmed"), { description: `${t("ref_label")} ${ref}` });
-    setTimeout(() => router.push("/dashboard/tourist"), 1500);
+    setTimeout(() => router.push(ROLE_REDIRECT[user.role] ?? "/dashboard/tourist"), 1500);
   };
 
   return (
@@ -186,31 +346,45 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                           <Input type="number" min={1} max={30} value={computedDays} disabled className="opacity-60" />
                         </div>
                       </div>
-                      {availableGuides.length > 0 && (
+                      <p className="text-xs text-muted-foreground rounded-lg bg-orange-50/60 border border-orange-100 p-3">
+                        {t("reservation_partner_only_hint")}
+                      </p>
+
+                      {guideOptions.length > 0 ? (
                         <div>
                           <Label>{t("choose_guide_label")}</Label>
                           <div className="grid sm:grid-cols-2 gap-3 mt-2">
-                            {availableGuides.map(g => (
-                              <Card
-                                key={g.id}
-                                className={`cursor-pointer transition-all overflow-hidden ${
-                                  selectedGuide === g.id ? "ring-2 ring-[#EA580C] bg-orange-50/50" : "hover:border-[#EA580C]/50"
-                                }`}
-                                onClick={() => setSelectedGuide(g.id)}
-                              >
-                                <CardContent className="p-3 flex items-start gap-3">
-                                  <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-orange-100">
-                                    <img src={g.image} alt={g.name} className="w-full h-full object-cover" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="font-bold text-sm text-foreground">{g.name}</div>
-                                    <div className="text-xs text-muted-foreground">{g.specialty}</div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
+                            {guideOptions.map(g => {
+                              const active = selectedGuides.includes(g.id);
+                              return (
+                                <Card
+                                  key={g.id}
+                                  className={`cursor-pointer transition-all overflow-hidden ${
+                                    active ? "ring-2 ring-[#EA580C] bg-orange-50/50" : "hover:border-[#EA580C]/50"
+                                  }`}
+                                  onClick={() => setSelectedGuides(ids =>
+                                    active ? ids.filter(id => id !== g.id) : [...ids, g.id]
+                                  )}
+                                >
+                                  <CardContent className="p-3 flex items-start gap-3">
+                                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-orange-100">
+                                      <img src={g.image} alt={g.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="font-bold text-sm text-foreground">{g.name}</div>
+                                      <div className="text-xs text-muted-foreground">{g.specialty}</div>
+                                      <div className="text-xs font-semibold text-[#EA580C] mt-1">
+                                        {(g.price ?? 0).toLocaleString()} {t("fcfa")} / {t("day_short")}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
                           </div>
                         </div>
+                      ) : (
+                        <p className="text-sm italic text-muted-foreground">{t("reservation_no_partner_guides")}</p>
                       )}
                     </div>
                   </div>
@@ -225,52 +399,63 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">{t("choose_hotel_desc")}</p>
 
-                    {/* Hotel List */}
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {HOTELS_NEARBY.map((h) => (
-                        <Card
-                          key={h.id}
-                          className={`cursor-pointer transition-all overflow-hidden ${
-                            selectedHotel === h.id ? "ring-2 ring-[#EA580C] bg-orange-50/50" : "hover:border-[#EA580C]/50"
-                          }`}
-                          onClick={() => setSelectedHotel(h.id)}
-                          onDoubleClick={() => setDetailHotel(h)}
-                        >
-                          <div className="flex">
-                            {h.image && (
-                              <div className="w-24 h-24 shrink-0">
-                                <img src={h.image} alt={h.name} className="w-full h-full object-cover" />
+                    {hotelOptions.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Hotel size={32} className="mx-auto mb-2 opacity-40" />
+                        <p>{t("reservation_no_partner_hotels")}</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Hotel List — uniquement les hôteliers partenaires de l'agence */}
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {hotelOptions.map((h) => (
+                            <Card
+                              key={h.partnerId}
+                              className={`cursor-pointer transition-all overflow-hidden ${
+                                selectedHotel === h.partnerId ? "ring-2 ring-[#EA580C] bg-orange-50/50" : "hover:border-[#EA580C]/50"
+                              }`}
+                              onClick={() => setSelectedHotel(h.partnerId)}
+                              onDoubleClick={() => setDetailHotel(h)}
+                            >
+                              <div className="flex">
+                                {h.image && (
+                                  <div className="w-24 h-24 shrink-0">
+                                    <img src={h.image} alt={h.name} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                <CardContent className="p-3 flex-1 min-w-0">
+                                  <span className="font-bold text-sm text-foreground truncate">{h.name}</span>
+                                  <div className="text-xs text-muted-foreground">{h.city}</div>
+                                  {h.roomType && <div className="text-xs text-muted-foreground">{h.roomType}</div>}
+                                  {h.rating != null && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <Star size={12} className="fill-amber-400 text-amber-400" />
+                                      <span className="text-xs font-semibold">{h.rating}</span>
+                                    </div>
+                                  )}
+                                  <div className="font-bold text-[#EA580C] text-sm mt-1">
+                                    {h.pricePerNight.toLocaleString()} {t("fcfa")}
+                                    <span className="text-xs text-muted-foreground font-normal"> /{t("night_short")}</span>
+                                  </div>
+                                </CardContent>
                               </div>
-                            )}
-                            <CardContent className="p-3 flex-1 min-w-0">
-                              <span className="font-bold text-sm text-foreground truncate">{h.name}</span>
-                              <Link href={`/hotel/${h.id}`} className="inline ml-1 shrink-0"><ExternalLink size={12} className="text-muted-foreground hover:text-[#EA580C]" /></Link>
-                              <div className="text-xs text-muted-foreground">{h.city}</div>
-                              <div className="flex items-center gap-1 mt-1">
-                                <Star size={12} className="fill-amber-400 text-amber-400" />
-                                <span className="text-xs font-semibold">{h.rating}</span>
-                              </div>
-                              <div className="font-bold text-[#EA580C] text-sm mt-1">{h.pricePerNight.toLocaleString()} {t("fcfa")} <span className="text-xs text-muted-foreground font-normal">/nuit</span></div>
-                            </CardContent>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
+                            </Card>
+                          ))}
+                        </div>
 
-                    {/* Map */}
-                    <div className="h-[400px] rounded-xl overflow-hidden border">
-                      <DtMap hotels={HOTELS_NEARBY} onSelectHotel={setSelectedHotel} selectedHotelId={selectedHotel} />
-                    </div>
+                        {/* Map — limitée aux hôtels partenaires */}
+                        <div className="h-[400px] rounded-xl overflow-hidden border">
+                          <DtMap hotels={hotelOptions} onSelectHotel={setSelectedHotel} selectedHotelId={selectedHotel} />
+                        </div>
+                      </>
+                    )}
 
-                    {selectedHotel && (
+                    {hotelObj && (
                       <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <Hotel className="text-[#EA580C]" />
                           <div>
-                          <div className="flex items-center gap-1">
-                            <div className="font-bold text-foreground">{HOTELS_NEARBY.find(h => h.id === selectedHotel)?.name}</div>
-                            <Link href={`/hotel/${selectedHotel}`}><ExternalLink size={12} className="text-muted-foreground hover:text-[#EA580C]" /></Link>
-                          </div>
+                            <div className="font-bold text-foreground">{hotelObj.name}</div>
                             <div className="text-xs text-[#EA580C]">{t("hotel_selected")}</div>
                           </div>
                         </div>
@@ -287,22 +472,22 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                     <div className="flex justify-between items-start mb-4">
                       <h2 className="text-xl font-bold text-foreground">{t("transport_heading")}</h2>
-                      <Button variant="outline" size="sm" onClick={() => setSelectedTrip(null)}>{t("skip_step")}</Button>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedTransport(null)}>{t("skip_step")}</Button>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">{t("transport_desc_short")}</p>
-                    
+
                     <div className="space-y-3">
-                      {tripsToDest.length === 0 ? (
+                      {transportOptions.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           <Bus size={32} className="mx-auto mb-2 opacity-40" />
-                          <p>{t("no_transport_available")}</p>
+                          <p>{t("reservation_no_partner_transport")}</p>
                           <p className="text-xs mt-1">{t("skip_transport_hint")}</p>
                         </div>
-                      ) : tripsToDest.map((trip, i) => (
-                        <Card 
-                          key={i} 
-                          className={`cursor-pointer transition-all ${selectedTrip === trip.vehicle ? 'ring-2 ring-[#EA580C] bg-orange-50/50' : 'hover:border-[#EA580C]/50'}`}
-                          onClick={() => setSelectedTrip(trip.vehicle)}
+                      ) : transportOptions.map((trip) => (
+                        <Card
+                          key={trip.id}
+                          className={`cursor-pointer transition-all ${selectedTransport === trip.id ? 'ring-2 ring-[#EA580C] bg-orange-50/50' : 'hover:border-[#EA580C]/50'}`}
+                          onClick={() => setSelectedTransport(trip.id)}
                         >
                           <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -310,13 +495,17 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                                 <Bus className="text-[#EA580C]" size={18} />
                               </div>
                               <div>
-                                <div className="font-bold text-foreground">{trip.from} → {trip.to}</div>
+                                <div className="font-bold text-foreground">
+                                  {trip.from !== "—" ? `${trip.from} → ${trip.to}` : (trip.label || trip.to)}
+                                </div>
                                 <div className="text-xs text-muted-foreground">{trip.company}</div>
-                                <div className="text-sm text-muted-foreground">{t("departure_time")} {trip.time} • {t("round_trip_included")}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {trip.time ? `${t("departure_time")} ${trip.time} • ` : ""}{t("round_trip_included")}
+                                </div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-bold text-[#EA580C]">{(trip.price * 2).toLocaleString()} {t("fcfa")}</div>
+                              <div className="font-bold text-[#EA580C]">{trip.price.toLocaleString()} {t("fcfa")}</div>
                               <div className="text-xs text-muted-foreground">{t("per_person")}</div>
                             </div>
                           </CardContent>
@@ -341,7 +530,7 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                           <li>{t("summary_date")} <strong>{dateArrivee && dateDepart ? `${dateArrivee} → ${dateDepart}` : t("summary_not_specified")}</strong></li>
                           <li>{t("summary_participants")} <strong>{participants} {t("summary_person")}</strong></li>
                           <li>{t("summary_duration")} <strong>{computedDays} {computedDays > 1 ? t("summary_days") : t("summary_day")}</strong></li>
-                          <li>{t("summary_unit_price")} {pack.price.toLocaleString()} {t("fcfa")}</li>
+                          <li>{t("breakdown_margin")} <strong>{agencyMargin.toLocaleString()} {t("fcfa")}</strong></li>
                         </ul>
                       </div>
 
@@ -350,11 +539,14 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                           <div className="flex items-center gap-3 mb-2">
                             <Hotel className="text-[#EA580C]" />
                             <h3 className="font-bold">{t("summary_hotel")} {hotelObj.name}</h3>
-                            <Link href={`/hotel/${hotelObj.id}`} className="ml-1"><ExternalLink size={12} className="text-muted-foreground hover:text-[#EA580C]" /></Link>
                           </div>
                           <ul className="text-sm space-y-1 ml-9 text-muted-foreground">
                             <li>{t("summary_location")} {hotelObj.city}</li>
+                            {hotelObj.roomType && <li>{hotelObj.roomType}</li>}
                             <li>{t("summary_price_per_night")} {hotelObj.pricePerNight.toLocaleString()} {t("fcfa")}</li>
+                            <li className="font-semibold text-[#EA580C]">
+                              {t("breakdown_room")} : {roomCost.toLocaleString()} {t("fcfa")}
+                            </li>
                           </ul>
                         </div>
                       )}
@@ -366,27 +558,33 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                             <h3 className="font-bold">{t("summary_transport")} {tripObj.from} → {tripObj.to}</h3>
                           </div>
                           <ul className="text-sm space-y-1 ml-9 text-muted-foreground">
-                            <li>{t("summary_departure")} {tripObj.time} ({t("round_trip_included")})</li>
-                            <li>{t("summary_price_per_person")} {(tripObj.price * 2).toLocaleString()} {t("fcfa")}</li>
+                            <li>{tripObj.company}{tripObj.time ? ` • ${t("departure_time")} ${tripObj.time}` : ""}</li>
+                            <li>{t("summary_price_per_person")} {tripObj.price.toLocaleString()} {t("fcfa")}</li>
+                            <li className="font-semibold text-[#EA580C]">
+                              {t("breakdown_trip")} : {tripCost.toLocaleString()} {t("fcfa")}
+                            </li>
                           </ul>
                         </div>
                       )}
 
-                      {selectedGuide && (() => {
-                        const guide = availableGuides.find(g => g.id === selectedGuide);
-                        if (!guide) return null;
-                        return (
-                          <div className="p-4 border rounded-xl bg-orange-50/50">
-                            <div className="flex items-center gap-3 mb-2">
-                              <User className="text-[#EA580C]" />
-                              <h3 className="font-bold">{t("summary_guide")} {guide.name}</h3>
-                            </div>
-                            <ul className="text-sm space-y-1 ml-9 text-muted-foreground">
-                              <li>{t("summary_guide_specialty")} {guide.specialty}</li>
-                            </ul>
+                      {chosenGuides.length > 0 && (
+                        <div className="p-4 border rounded-xl bg-orange-50/50">
+                          <div className="flex items-center gap-3 mb-2">
+                            <User className="text-[#EA580C]" />
+                            <h3 className="font-bold">{t("summary_guide")}</h3>
                           </div>
-                        );
-                      })()}
+                          <ul className="text-sm space-y-1 ml-9 text-muted-foreground">
+                            {chosenGuides.map(g => (
+                              <li key={g.id}>
+                                {g.name} — {(g.price ?? 0).toLocaleString()} {t("fcfa")}/{t("day_short")}
+                              </li>
+                            ))}
+                            <li className="font-semibold text-[#EA580C]">
+                              {t("breakdown_guide")} : {guideCost.toLocaleString()} {t("fcfa")}
+                            </li>
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -453,24 +651,35 @@ export default function ReservationWorkflow({ params }: { params: Promise<{ offe
                 <h3 className="font-bold text-foreground mb-4 border-b pb-2">{t("price_detail_heading")}</h3>
                 
                 <div className="space-y-3 mb-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t("pack_line")} ({participants}x)</span>
-                    <span className="font-medium">{basePrice.toLocaleString()} {t("fcfa")}</span>
-                  </div>
-                  
                   {hotelObj && (
-                    <div className="flex justify-between text-[#EA580C]">
-                      <span>{t("hotel_line")} ({computedDays} {computedDays > 1 ? t("summary_days") : t("summary_day")} x {participants})</span>
-                      <span className="font-medium">+{hotelPrice.toLocaleString()} {t("fcfa")}</span>
+                    <div className="flex justify-between gap-3 text-[#EA580C]">
+                      <span>
+                        {t("breakdown_room")} ({hotelObj.pricePerNight.toLocaleString()} × {computedDays} {t("night_short")})
+                      </span>
+                      <span className="font-medium whitespace-nowrap">{roomCost.toLocaleString()} {t("fcfa")}</span>
                     </div>
                   )}
 
                   {tripObj && (
-                    <div className="flex justify-between text-[#EA580C]">
-                      <span>{t("transport_line")} (A/R x {participants})</span>
-                      <span className="font-medium">+{transportPrice.toLocaleString()} {t("fcfa")}</span>
+                    <div className="flex justify-between gap-3 text-[#EA580C]">
+                      <span>
+                        {t("breakdown_trip")} ({tripObj.price.toLocaleString()} × {participants})
+                      </span>
+                      <span className="font-medium whitespace-nowrap">{tripCost.toLocaleString()} {t("fcfa")}</span>
                     </div>
                   )}
+
+                  {chosenGuides.length > 0 && (
+                    <div className="flex justify-between gap-3 text-[#EA580C]">
+                      <span>{t("breakdown_guide")} ({chosenGuides.length} × {computedDays} {t("day_short")})</span>
+                      <span className="font-medium whitespace-nowrap">{guideCost.toLocaleString()} {t("fcfa")}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{t("breakdown_margin")}</span>
+                    <span className="font-medium whitespace-nowrap">{agencyMargin.toLocaleString()} {t("fcfa")}</span>
+                  </div>
                 </div>
 
                 <div className="border-t pt-4">

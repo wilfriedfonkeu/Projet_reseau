@@ -8,8 +8,9 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { Badge } from "@/src/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
-import { getPublicPacks, CIRCUITS, DESTINATIONS, REVIEWS, AGENCIES } from "@/src/lib/njangui-data";
+import { getPublicPacks, getActiveAgencies, CIRCUITS, DESTINATIONS, REVIEWS } from "@/src/lib/njangui-data";
 import { getCurrentUser } from "@/src/lib/auth-store";
+import { useAuth } from "@/src/lib/auth-context";
 import { useOffersLoader } from "@/src/hooks/use-offers-loader";
 import { useLang } from "@/src/lib/lang";
 import {
@@ -21,6 +22,7 @@ export default function HomePage() {
   useOffersLoader();
   const router = useRouter();
   const { t } = useLang();
+  const { user: currentUser } = useAuth();
   const [packCat, setPackCat] = useState("Tous");
   const [reviewIdx, setReviewIdx] = useState(0);
   const [step, setStep] = useState(0);
@@ -134,10 +136,10 @@ export default function HomePage() {
           </Button>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {AGENCIES.map((a) => (
+          {getActiveAgencies().map((a) => (
             <Card key={a.id} className="hover:shadow-xl transition-all border-t-4 border-[#EA580C] group">
               <CardContent className="p-5 text-center">
-                <img src={a.logo} alt={a.name} className="w-16 h-16 mx-auto rounded-full ring-4 ring-[#EA580C]/10 group-hover:ring-[#EA580C]/30 transition" />
+                <img src={(a.userId && a.userId === currentUser?.id && currentUser.avatar) || a.logo} alt={a.name} className="w-16 h-16 mx-auto rounded-full object-cover ring-4 ring-[#EA580C]/10 group-hover:ring-[#EA580C]/30 transition" />
                 <h3 className="font-bold mt-3 text-foreground">{a.name}</h3>
                 <div className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
                   <MapPin size={12} /> {a.city}

@@ -1,5 +1,86 @@
 [
   {
+    "ref": "DT-2026-356",
+    "packId": "off_1795172879526",
+    "packName": "JOIE",
+    "userId": "usr_1795013068012",
+    "dates": "2026-11-20 → 2026-11-22",
+    "status": "Confirmée",
+    "participants": 1,
+    "days": 2,
+    "totalPrice": 174500,
+    "createdAt": "2026-11-20",
+    "hotelName": "L'Hôtel de l'Artisanat",
+    "hotelPrice": 70000,
+    "transportLabel": "Yaoundé → Douala 07h00",
+    "transportPrice": 4500,
+    "transportAgency": "Trans-Cameroun",
+    "guideId": "g2",
+    "guideIds": [
+      "g2"
+    ],
+    "guideName": "Christian Kolo",
+    "agencyId": "ag1"
+  },
+  {
+    "ref": "DT-2026-106",
+    "packId": "off_1795082767909",
+    "packName": "Plaisir ",
+    "userId": "usr_1795013068012",
+    "dates": "2026-11-19 → 2026-11-22",
+    "status": "Confirmée",
+    "participants": 1,
+    "days": 3,
+    "totalPrice": 279500,
+    "createdAt": "2026-11-19",
+    "hotelName": "L'Hôtel Ilomba",
+    "hotelPrice": 165000,
+    "transportLabel": "Douala → Kribi 09h00",
+    "transportPrice": 4500,
+    "transportAgency": "Trans-Cameroun",
+    "guideId": "g2",
+    "guideIds": [
+      "g2"
+    ],
+    "guideName": "Christian Kolo",
+    "agencyId": "ag1"
+  },
+  {
+    "ref": "DT-2026-739",
+    "packId": "off_1795082767909",
+    "packName": "Plaisir ",
+    "userId": "usr_1795013068012",
+    "dates": "2026-11-19 → 2026-11-22",
+    "status": "Confirmée",
+    "participants": 2,
+    "days": 3,
+    "totalPrice": 1670000,
+    "createdAt": "2026-11-19",
+    "transportLabel": "Douala → Kribi 07h00",
+    "transportPrice": 20000,
+    "transportAgency": "Star Voyages",
+    "guideId": "g1",
+    "guideName": "Alphonse Obama",
+    "agencyId": "ag1"
+  },
+  {
+    "ref": "DT-2026-992",
+    "packId": "p2",
+    "packName": "Mont Cameroun Trek",
+    "userId": "usr_020",
+    "dates": "2026-11-03 → 2026-11-29",
+    "status": "Confirmée",
+    "participants": 27,
+    "days": 26,
+    "totalPrice": 252909000,
+    "createdAt": "2026-11-19",
+    "hotelName": "Le Relais des Crandell",
+    "hotelPrice": 28080000,
+    "transportLabel": "Douala → Buea 08h30",
+    "transportPrice": 189000,
+    "transportAgency": "Star Voyages"
+  },
+  {
     "ref": "DT-2026-014",
     "packId": "off_1781703222738",
     "packName": "PLAGE DU GRAND BATANGA",
@@ -108,5 +189,17 @@
     "days": 1,
     "totalPrice": 382000,
     "createdAt": "2026-06-17"
+  },
+  {
+    "ref": "DT-2026-001",
+    "packId": "p8",
+    "packName": "Chutes de la Lobé",
+    "dates": "10–13 juin 2026",
+    "status": "Annulée",
+    "userId": "usr_001",
+    "participants": 2,
+    "days": 4,
+    "totalPrice": 240000,
+    "createdAt": "2026-05-20"
   }
 ]

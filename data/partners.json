@@ -1,0 +1,111 @@
+[
+  {
+    "id": "par1",
+    "agencyId": "ag1",
+    "name": "L'Hôtel Ilomba",
+    "type": "hotelier",
+    "city": "Kribi",
+    "contact": "Mme Ngono",
+    "email": "contact@hotel-ilomba.cm",
+    "phone": "+237 6 99 12 34 56",
+    "status": "Actif",
+    "contract": {
+      "commissionRate": 10,
+      "paymentDelay": 30,
+      "durationMonths": 12,
+      "startDate": "2026-01-15",
+      "notes": "Annulation gratuite jusqu'à J-7. Petit-déjeuner inclus.",
+      "roomPrice": 55000,
+      "roomType": "Chambre Supérieure",
+      "tripPrice": 0,
+      "tripLabel": ""
+    },
+    "createdAt": "2026-01-15"
+  },
+  {
+    "id": "par2",
+    "agencyId": "ag1",
+    "name": "L'Hôtel de l'Artisanat",
+    "type": "hotelier",
+    "city": "Foumban",
+    "contact": "M. Mbarga",
+    "email": "artisanat.foumban@example.cm",
+    "phone": "+237 6 77 88 99 00",
+    "status": "Actif",
+    "contract": {
+      "commissionRate": 12,
+      "paymentDelay": 15,
+      "durationMonths": 6,
+      "startDate": "2026-03-01",
+      "notes": "Chambres décorées d'œuvres Bamoun, petit-déjeuner inclus.",
+      "roomPrice": 35000,
+      "roomType": "Chambre Standard"
+    },
+    "createdAt": "2026-03-01"
+  },
+  {
+    "id": "par3",
+    "userId": "usr_041",
+    "agencyId": "ag1",
+    "name": "Star Voyages",
+    "type": "agence-voyages",
+    "city": "Douala",
+    "contact": "Mme Aïcha Nkomo",
+    "email": "commercial@starvoyages.cm",
+    "phone": "+237 6 55 44 33 22",
+    "status": "Actif",
+    "contract": {
+      "commissionRate": 8,
+      "paymentDelay": 7,
+      "durationMonths": 12,
+      "startDate": "2026-01-01",
+      "notes": "Transport inclus dans les packs balnéaires, 2 départs par jour.",
+      "tripPrice": 5000,
+      "tripLabel": "Douala → Kribi"
+    },
+    "createdAt": "2026-01-01"
+  },
+  {
+    "id": "par4",
+    "userId": "usr_040",
+    "agencyId": "ag1",
+    "name": "Trans-Cameroun",
+    "type": "agence-voyages",
+    "city": "Yaoundé",
+    "contact": "M. Jean-Marc Beti",
+    "email": "partenariat@trans-cameroun.cm",
+    "phone": "+237 6 33 22 11 00",
+    "status": "En attente",
+    "contract": {
+      "commissionRate": 10,
+      "paymentDelay": 15,
+      "durationMonths": 6,
+      "startDate": "2026-05-01",
+      "notes": "Bus climatisés, validation du contrat en cours.",
+      "tripPrice": 4500,
+      "tripLabel": "Douala → Kribi"
+    },
+    "createdAt": "2026-05-01"
+  },
+  {
+    "id": "par5",
+    "agencyId": "ag2",
+    "name": "Le Mountain Hotel",
+    "type": "hotelier",
+    "city": "Buea",
+    "contact": "M. Ewome",
+    "email": "reservation@mountain-hotel.cm",
+    "phone": "+237 6 12 34 56 78",
+    "status": "Actif",
+    "contract": {
+      "commissionRate": 14,
+      "paymentDelay": 30,
+      "durationMonths": 12,
+      "startDate": "2026-02-01",
+      "notes": "Point de départ de l'ascension du Mont Cameroun.",
+      "roomPrice": 50000,
+      "roomType": "Chambre Supérieure"
+    },
+    "createdAt": "2026-02-01"
+  }
+]

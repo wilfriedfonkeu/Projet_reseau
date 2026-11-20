@@ -1,0 +1,32 @@
+[
+  {
+    "id": "monthly",
+    "label": "Mensuel",
+    "price": 25000,
+    "period": "mois",
+    "publications": 5,
+    "popular": false,
+    "save": null,
+    "published": true
+  },
+  {
+    "id": "semester",
+    "label": "Semestriel",
+    "price": 120000,
+    "period": "6 mois",
+    "publications": 15,
+    "popular": true,
+    "save": "30 000 FCFA",
+    "published": true
+  },
+  {
+    "id": "yearly",
+    "label": "Annuel",
+    "price": 200000,
+    "period": "an",
+    "publications": 50,
+    "popular": false,
+    "save": "100 000 FCFA",
+    "published": true
+  }
+]

@@ -20,7 +20,12 @@ export interface DtUser {
   languages?: string[];   // guide
   plan?: string;          // agence
   verified?: boolean;
+  accountStatus?: "active" | "suspended";
   createdAt: string;
+}
+
+export function isAccountActive(user?: Pick<DtUser, "accountStatus"> | null): boolean {
+  return !!user && user.accountStatus !== "suspended";
 }
 
 // ─── Comptes de démonstration pré-créés ────────────────────────────────────
@@ -234,23 +239,51 @@ function notifyAuthChange() {
 // ─── Initialise la base de données utilisateurs si vide ───────────────────
 function initUsersDb() {
   if (typeof window === "undefined") return;
+  const demoById = new Map(DEMO_ACCOUNTS.map((u) => [u.id, u]));
   const existing = localStorage.getItem(USERS_KEY);
   if (!existing) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(DEMO_ACCOUNTS));
+    localStorage.setItem(
+      USERS_KEY,
+      JSON.stringify(DEMO_ACCOUNTS.map((u) => ({ ...u, accountStatus: u.accountStatus ?? "active" })))
+    );
   } else {
     let users: DtUser[] = JSON.parse(existing);
+    if (!Array.isArray(users)) users = [];
     // Migration: remplacer les anciens emails @dreamtour.cm par @njangui.cm
     let migrated = false;
-    users = users.map(u => {
+    users = users.map((u) => {
+      let next = u;
       if (u.email.endsWith("@dreamtour.cm")) {
         migrated = true;
-        return { ...u, email: u.email.replace("@dreamtour.cm", "@njangui.cm") };
+        next = { ...next, email: u.email.replace("@dreamtour.cm", "@njangui.cm") };
       }
-      return u;
+      if (next.accountStatus !== "active" && next.accountStatus !== "suspended") {
+        migrated = true;
+        next = { ...next, accountStatus: "active" };
+      }
+      // Synchroniser les comptes de démonstration (rôles/identités canoniques)
+      const demo = demoById.get(next.id);
+      if (demo) {
+        const synced = {
+          ...demo,
+          accountStatus:
+            next.accountStatus === "active" || next.accountStatus === "suspended"
+              ? next.accountStatus
+              : (demo.accountStatus ?? "active"),
+        };
+        if (JSON.stringify(synced) !== JSON.stringify(next)) {
+          migrated = true;
+          next = synced;
+        }
+      }
+      return next;
     });
     // Merge: ajouter les comptes démo manquants sans écraser les inscriptions
     const ids = new Set(users.map((u) => u.id));
-    const toAdd = DEMO_ACCOUNTS.filter((d) => !ids.has(d.id));
+    const toAdd = DEMO_ACCOUNTS.filter((d) => !ids.has(d.id)).map((u) => ({
+      ...u,
+      accountStatus: u.accountStatus ?? "active",
+    }));
     if (toAdd.length > 0 || migrated) {
       localStorage.setItem(USERS_KEY, JSON.stringify([...users, ...toAdd]));
     }
@@ -261,7 +294,8 @@ function initUsersDb() {
 function getUsers(): DtUser[] {
   if (typeof window === "undefined") return [];
   initUsersDb();
-  return JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]");
+  const users = JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]") as DtUser[];
+  return users.map((u) => ({ ...u, accountStatus: u.accountStatus ?? "active" }));
 }
 
 // ─── Connexion ─────────────────────────────────────────────────────────────
@@ -290,6 +324,9 @@ export function login(email: string, password: string): { user: DtUser | null; e
       users[idx].email = user.email;
       localStorage.setItem(USERS_KEY, JSON.stringify(users));
     }
+  }
+  if (!isAccountActive(user)) {
+    return { user: null, error: "Votre compte a été désactivé. Contactez l'administrateur." };
   }
   // Stocker sans le mot de passe
   const safeUser = { ...user };
@@ -348,7 +385,13 @@ export function getCurrentUser(): DtUser | null {
     user.email = user.email.replace("@dreamtour.cm", "@njangui.cm");
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
   }
-  return user;
+  const fresh = getUserById(user.id);
+  if (fresh && !isAccountActive(fresh)) {
+    localStorage.removeItem(STORAGE_KEY);
+    notifyAuthChange();
+    return null;
+  }
+  return fresh ?? user;
 }
 
 // ─── Déconnexion ───────────────────────────────────────────────────────────
@@ -375,7 +418,41 @@ export function updateProfile(updates: Partial<DtUser>): DtUser | null {
 }
 
 export function getUserById(id: string): DtUser | undefined {
-  return getUsers().find(u => u.id === id);
+  return getUsers().find((u) => u.id === id);
+}
+
+export function getAllUsers(): DtUser[] {
+  return getUsers();
+}
+
+export function updateUserById(id: string, updates: Partial<DtUser>): DtUser | null {
+  const users = getUsers();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) return null;
+  const updated = { ...users[idx], ...updates };
+  users[idx] = updated;
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  const current = getCurrentUser();
+  if (current?.id === id) {
+    if (!isAccountActive(updated)) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
+  }
+  notifyAuthChange();
+  return updated;
+}
+
+export function setUserAccountStatus(id: string, status: "active" | "suspended"): DtUser | null {
+  return updateUserById(id, { accountStatus: status });
+}
+
+// ─── Comptes enregistrés par rôle (hôteliers, agences de voyages, ...) ────
+export function getUsersByRoles(roles: UserRole[], options?: { includeInactive?: boolean }): DtUser[] {
+  return getUsers().filter(
+    (u) => roles.includes(u.role) && (options?.includeInactive || isAccountActive(u))
+  );
 }
 
 // ─── Redirection selon le rôle ────────────────────────────────────────────

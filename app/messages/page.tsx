@@ -132,7 +132,7 @@ function MessagesContent() {
     <div className="min-h-screen flex flex-col bg-background">
       <DtNavbar />
       <main className="flex-1 max-w-5xl mx-auto w-full px-5 py-8">
-        <DtMessenger />
+        <DtMessenger agencyId={AGENCIES.find((a) => a.userId === user.id)?.id} />
       </main>
       <DtFooter />
     </div>

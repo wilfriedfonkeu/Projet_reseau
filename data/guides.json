@@ -1,23 +1,27 @@
 [
   {
     "id": "g1",
+    "userId": "usr_010",
     "name": "Alphonse Obama",
     "specialty": "Pirogue, oiseaux, contes Beti",
     "bio": "Poète, conteur et amoureux du fleuve Nyong, Alphonse rame sur ces eaux depuis son enfance.",
     "promise": "Glissez avec moi sur les eaux miroirs du Nyong, oubliez le bruit du monde et laissez la forêt vous chanter ses histoires.",
     "image": "/images/guides/alphonse-obama.avif",
     "city": "Mbalmayo",
-    "agencyId": "ag1"
+    "agencyId": "ag1",
+    "price": 25000
   },
   {
     "id": "g2",
+    "userId": "usr_011",
     "name": "Christian Kolo",
     "specialty": "Survie en forêt, primates, écologie",
     "bio": "Ingénieur des eaux et forêts passionné de conservation, il travaille en duo avec des pisteurs Baka.",
     "promise": "Nous marcherons sur les traces des géants de la forêt. Vous découvrirez une jungle vivante que personne d'autre ne peut voir.",
     "image": "/images/guides/christian-kolo.jpg",
     "city": "Yaoundé",
-    "agencyId": "ag1"
+    "agencyId": "ag1",
+    "price": 30000
   },
   {
     "id": "g3",
@@ -27,7 +31,8 @@
     "promise": "Je vous emmène voir le soleil se lever derrière le pic de Roumsiki.",
     "image": "/images/guides/david-kapsiki.jpg",
     "city": "Roumsiki",
-    "agencyId": "ag4"
+    "agencyId": "ag4",
+    "price": 35000
   },
   {
     "id": "g4",
@@ -37,7 +42,8 @@
     "promise": "Je vous ouvrirai les portes du temps pour décoder les symboles cachés du palais.",
     "image": "/images/guides/ibrahim-njoya.jpg",
     "city": "Foumban",
-    "agencyId": "ag3"
+    "agencyId": "ag3",
+    "price": 30000
   },
   {
     "id": "g5",
@@ -47,7 +53,8 @@
     "promise": "Je vous guiderai au plus près du grondement de l'eau, là où la brume crée des arcs-en-ciel.",
     "image": "/images/guides/jean-marie-ngalame.avif",
     "city": "Nkongsamba",
-    "agencyId": "ag3"
+    "agencyId": "ag3",
+    "price": 28000
   },
   {
     "id": "g6",
@@ -57,7 +64,8 @@
     "promise": "Je vous emmène là où le fleuve embrasse la mer.",
     "image": "/images/guides/maelis-ndame.avif",
     "city": "Kribi",
-    "agencyId": "ag1"
+    "agencyId": "ag1",
+    "price": 25000
   },
   {
     "id": "g7",
@@ -67,7 +75,8 @@
     "promise": "Suivez-moi, et je vous promets de croiser le regard du Roi de la forêt.",
     "image": "/images/guides/ousmane-boukar.avif",
     "city": "Maroua",
-    "agencyId": "ag4"
+    "agencyId": "ag4",
+    "price": 40000
   },
   {
     "id": "g8",
@@ -77,7 +86,8 @@
     "promise": "Je vous ferai chevaucher à travers la brume des cratères.",
     "image": "/images/guides/saliou-bakari.avif",
     "city": "Nkongsamba",
-    "agencyId": "ag3"
+    "agencyId": "ag3",
+    "price": 35000
   },
   {
     "id": "g9",
@@ -87,7 +97,8 @@
     "promise": "Avec moi, vous apprendrez à écouter les secrets du volcan.",
     "image": "/images/guides/samuel-ewome.avif",
     "city": "Buea",
-    "agencyId": "ag1"
+    "agencyId": "ag1",
+    "price": 45000
   },
   {
     "id": "g10",
@@ -97,7 +108,8 @@
     "promise": "Je vous garantis un séjour déconnecté, sécurisé et plein de vibrations positives.",
     "image": "/images/guides/sandra-sea-bella.avif",
     "city": "Limbé",
-    "agencyId": "ag1"
+    "agencyId": "ag1",
+    "price": 30000
   },
   {
     "id": "g11",
@@ -107,7 +119,8 @@
     "promise": "Je vous mènerai au sommet du toit de l'Afrique de l'Ouest, en toute sécurité.",
     "image": "/images/guides/samuel-ewome.avif",
     "city": "Buea",
-    "agencyId": "ag2"
+    "agencyId": "ag2",
+    "price": 45000
   },
   {
     "id": "g12",
@@ -117,7 +130,8 @@
     "promise": "Chaque plante a une histoire à raconter, je vous aiderai à l'entendre.",
     "image": "/images/guides/jean-marie-ngalame.avif",
     "city": "Buea",
-    "agencyId": "ag2"
+    "agencyId": "ag2",
+    "price": 28000
   },
   {
     "id": "g13",
@@ -127,6 +141,7 @@
     "promise": "Je vous ferai découvrir les secrets cachés derrière chaque cascade.",
     "image": "/images/guides/christian-kolo.jpg",
     "city": "Nkongsamba",
-    "agencyId": "ag2"
+    "agencyId": "ag2",
+    "price": 32000
   }
 ]
