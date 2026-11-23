@@ -70,5 +70,29 @@
     "text": "bonjour je souhaite annuler une réservation",
     "createdAt": "2026-06-18T08:03:50.998Z",
     "read": false
+  },
+  {
+    "id": "msg_1795244752566",
+    "senderId": "usr_1795241289104",
+    "receiverId": "usr_099",
+    "text": "bonjour comment allez vous",
+    "createdAt": "2026-11-21T07:05:52.566Z",
+    "read": true
+  },
+  {
+    "id": "msg_1795245493162",
+    "senderId": "usr_099",
+    "receiverId": "usr_1795241289104",
+    "text": "je vais bien et vous",
+    "createdAt": "2026-11-21T07:18:13.162Z",
+    "read": true
+  },
+  {
+    "id": "msg_1795245516640",
+    "senderId": "usr_099",
+    "receiverId": "usr_1795241289104",
+    "text": "ta tete",
+    "createdAt": "2026-11-21T07:18:36.640Z",
+    "read": true
   }
 ]

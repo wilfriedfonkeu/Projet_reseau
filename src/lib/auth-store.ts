@@ -378,6 +378,10 @@ export function getUserById(id: string): DtUser | undefined {
   return getUsers().find(u => u.id === id);
 }
 
+export function getAllUsers(): DtUser[] {
+  return getUsers();
+}
+
 // ─── Redirection selon le rôle ────────────────────────────────────────────
 export const ROLE_REDIRECT: Record<UserRole, string> = {
   tourist: "/dashboard/tourist",

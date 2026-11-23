@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getCurrentUser, DtUser } from "@/src/lib/auth-store";
-import { getConversations, getMessagesBetween, sendMessage, markMessagesRead, getAllMessages, MessageData, loadSavedMessages, AGENCIES } from "@/src/lib/njangui-data";
+import { getCurrentUser, getAllUsers, getUserById, DtUser } from "@/src/lib/auth-store";
+import { getConversations, getMessagesBetween, sendMessage, markMessagesRead, MessageData, loadSavedMessages, AGENCIES } from "@/src/lib/njangui-data";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
-import { Send, MessageCircle, ArrowLeft } from "lucide-react";
+import { Send, MessageCircle, ArrowLeft, Plus, Search } from "lucide-react";
 
 export function DtMessenger() {
   const [user, setUser] = useState<DtUser | null>(null);
@@ -14,12 +14,14 @@ export function DtMessenger() {
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [input, setInput] = useState("");
   const [showMobileList, setShowMobileList] = useState(true);
+  const [showContacts, setShowContacts] = useState(false);
+  const [contactSearch, setContactSearch] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const u = getCurrentUser();
-    setUser(u);
     loadSavedMessages().then(() => {
+      setUser(u);
       if (u) {
         setConvs(getConversations(u.id));
       }
@@ -55,9 +57,16 @@ export function DtMessenger() {
   }
 
   function getOtherUserInfo(otherId: string) {
-    const agency = AGENCIES.find(a => a.id === otherId || (a as any).userId === otherId);
-    if (agency) return { name: agency.name, avatar: agency.logo };
-    return { name: otherId, avatar: "" };
+    const known = getUserById(otherId);
+    if (known) {
+      const name = known.role === "admin"
+        ? "Administration Njangui"
+        : (known.companyName || `${known.firstName} ${known.lastName}`.trim() || otherId);
+      return { name, avatar: known.avatar ?? "", role: known.role };
+    }
+    const agency = AGENCIES.find(a => a.id === otherId || (a as { userId?: string }).userId === otherId);
+    if (agency) return { name: agency.name, avatar: agency.logo, role: "agency" };
+    return { name: otherId, avatar: "", role: "" };
   }
 
   function formatDate(iso: string) {
@@ -77,18 +86,83 @@ export function DtMessenger() {
   }
 
   const otherUser = selectedConv ? getOtherUserInfo(selectedConv.withUserId) : null;
+  const contacts = user
+    ? getAllUsers().filter((u) => {
+        if (u.id === user.id) return false;
+        const haystack = `${u.firstName} ${u.lastName} ${u.companyName ?? ""} ${u.email} ${u.role}`.toLowerCase();
+        return haystack.includes(contactSearch.trim().toLowerCase());
+      })
+    : [];
+
+  function openConversation(withUserId: string) {
+    setSelectedConv({ withUserId });
+    setMessages(getMessagesBetween(user!.id, withUserId));
+    setShowContacts(false);
+    setShowMobileList(false);
+  }
 
   return (
     <div className="flex h-[calc(100vh-12rem)] border rounded-xl overflow-hidden bg-card">
       {/* Conversation list */}
       <div className={`w-full sm:w-80 border-r shrink-0 flex flex-col ${showMobileList ? "block" : "hidden sm:flex"}`}>
-        <div className="p-4 border-b">
-          <h2 className="font-bold text-lg">Messages</h2>
+        <div className="p-4 border-b flex items-center justify-between gap-2">
+          <h2 className="font-bold text-lg">{showContacts ? "Nouveau message" : "Messages"}</h2>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-[#EA580C] px-2"
+            onClick={() => setShowContacts(!showContacts)}
+            title="Écrire à un touriste, une agence ou l’administrateur"
+          >
+            {showContacts ? <ArrowLeft size={16} /> : <Plus size={16} />}
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {convs.length === 0 ? (
+          {showContacts ? (
+            <>
+              <div className="p-3 border-b">
+                <div className="relative">
+                  <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
+                  <Input
+                    value={contactSearch}
+                    onChange={(e) => setContactSearch(e.target.value)}
+                    placeholder="Rechercher un contact…"
+                    className="pl-8 h-9 text-xs"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Touristes, agences, hôtels, guides et administration.
+                </p>
+              </div>
+              {contacts.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">Aucun contact trouvé.</div>
+              ) : contacts.map((u) => {
+                const info = getOtherUserInfo(u.id);
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => openConversation(u.id)}
+                    className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#EA580C]/10 flex items-center justify-center shrink-0 text-xs font-bold text-[#EA580C]">
+                        {info.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm truncate font-semibold">{info.name}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{u.email} · {u.role}</div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </>
+          ) : convs.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              Aucune conversation pour le moment.
+              Aucune conversation pour le moment.<br />
+              <button className="text-[#EA580C] underline mt-2" onClick={() => setShowContacts(true)}>
+                Écrire à un contact
+              </button>
             </div>
           ) : (
             convs.map((conv) => {
@@ -97,7 +171,7 @@ export function DtMessenger() {
               return (
                 <button
                   key={`${conv.withUserId}_${conv.packId ?? ""}`}
-                  onClick={() => { setSelectedConv({ withUserId: conv.withUserId, packId: conv.packId }); setShowMobileList(false); }}
+                  onClick={() => { setSelectedConv({ withUserId: conv.withUserId, packId: conv.packId }); setMessages(getMessagesBetween(user.id, conv.withUserId, conv.packId)); setShowMobileList(false); }}
                   className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${isUnread ? "bg-orange-50 font-bold" : ""} ${selectedConv?.withUserId === conv.withUserId ? "bg-muted" : ""}`}
                 >
                   <div className="flex items-center gap-3">
@@ -139,7 +213,7 @@ export function DtMessenger() {
               </div>
               <div>
                 <div className="font-bold text-sm">{otherUser?.name}</div>
-                {selectedConv.packId && <div className="text-[10px] text-muted-foreground">À propos d'une offre</div>}
+                {selectedConv.packId && <div className="text-[10px] text-muted-foreground">À propos d’une offre</div>}
               </div>
             </div>
 

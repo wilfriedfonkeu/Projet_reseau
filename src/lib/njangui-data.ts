@@ -319,38 +319,119 @@ export const ROOMS = [
 ];
 
 // --- Données agences de voyages ---
-export const FLEET = [
-  { id: "V-001", type: "Minibus 14 places", capacity: 14, status: "Disponible" },
-  { id: "V-002", type: "Bus 35 places", capacity: 35, status: "Disponible" },
-  { id: "V-003", type: "Berline VIP", capacity: 4, status: "En mission" },
-  { id: "V-004", type: "4x4 Tout-terrain", capacity: 7, status: "Disponible" },
+export interface VehicleData {
+  id: string;
+  plate: string;
+  type: string;
+  capacity: number;
+  status: string;
+  company: string;
+  createdAt: string;
+}
+
+export const FLEET: VehicleData[] = [
+  { id: "V-001", plate: "LT-123-AB", type: "Minibus 14 places", capacity: 14, status: "Disponible", company: "Star Voyages", createdAt: "2026-01-10T08:00:00.000Z" },
+  { id: "V-002", plate: "LT-456-CD", type: "Bus 35 places", capacity: 35, status: "Disponible", company: "Trans-Cameroun", createdAt: "2026-01-12T08:00:00.000Z" },
+  { id: "V-003", plate: "LT-789-EF", type: "Berline VIP", capacity: 4, status: "En mission", company: "Trans-Cameroun", createdAt: "2026-01-15T08:00:00.000Z" },
+  { id: "V-004", plate: "LT-321-GH", type: "4x4 Tout-terrain", capacity: 7, status: "Disponible", company: "Star Voyages", createdAt: "2026-02-02T08:00:00.000Z" },
+  { id: "V-005", plate: "LT-654-IJ", type: "Bus 28 places", capacity: 28, status: "Disponible", company: "Trans-Cameroun", createdAt: "2026-02-08T08:00:00.000Z" },
+  { id: "V-006", plate: "LT-987-KL", type: "Minibus 18 places", capacity: 18, status: "Maintenance", company: "Trans-Cameroun", createdAt: "2026-02-20T08:00:00.000Z" },
+  { id: "V-007", plate: "LT-147-MN", type: "Bus 45 places", capacity: 45, status: "Disponible", company: "CamTrans", createdAt: "2026-03-05T08:00:00.000Z" },
 ];
 
-export const TRIPS = [
-  { from: "Douala", to: "Kribi", time: "07h00", vehicle: "V-001", price: 5000, company: "Star Voyages" },
-  { from: "Douala", to: "Kribi", time: "09h00", vehicle: "V-005", price: 4500, company: "Trans-Cameroun" },
-  { from: "Yaoundé", to: "Kribi", time: "06h00", vehicle: "V-006", price: 6000, company: "Trans-Cameroun" },
-  { from: "Douala", to: "Limbe", time: "08h00", vehicle: "V-001", price: 3000, company: "Star Voyages" },
-  { from: "Douala", to: "Limbe", time: "10h00", vehicle: "V-005", price: 2500, company: "Trans-Cameroun" },
-  { from: "Douala", to: "Buea", time: "08h30", vehicle: "V-003", price: 3500, company: "Star Voyages" },
-  { from: "Douala", to: "Buea", time: "11h00", vehicle: "V-006", price: 3000, company: "Trans-Cameroun" },
-  { from: "Douala", to: "Nkongsamba", time: "09h00", vehicle: "V-004", price: 4000, company: "Star Voyages" },
-  { from: "Douala", to: "Yaoundé", time: "06h00", vehicle: "V-002", price: 5000, company: "Trans-Cameroun" },
-  { from: "Douala", to: "Yaoundé", time: "14h00", vehicle: "V-001", price: 5500, company: "Star Voyages" },
-  { from: "Yaoundé", to: "Douala", time: "07h00", vehicle: "V-002", price: 5000, company: "Trans-Cameroun" },
-  { from: "Yaoundé", to: "Bafoussam", time: "06h30", vehicle: "V-002", price: 4500, company: "Trans-Cameroun" },
-  { from: "Yaoundé", to: "Foumban", time: "08h00", vehicle: "V-003", price: 5500, company: "Trans-Cameroun" },
-  { from: "Garoua", to: "Maroua", time: "09h00", vehicle: "V-004", price: 6000, company: "Trans-Cameroun" },
-  { from: "Yaoundé", to: "Kribi", time: "05h00", vehicle: "V-007", price: 6500, company: "CamTrans" },
+let _savedVehicles: VehicleData[] | null = null;
+
+export async function loadVehicles(): Promise<void> {
+  if (_savedVehicles !== null) return;
+  try {
+    const res = await fetch("/api/vehicles");
+    const data = await res.json();
+    _savedVehicles = Array.isArray(data) ? data : [];
+  } catch {
+    _savedVehicles = [];
+  }
+}
+
+export function getAllVehicles(): VehicleData[] {
+  return [...(_savedVehicles ?? [])];
+}
+
+export async function saveVehicle(vehicle: Omit<VehicleData, "id" | "status" | "createdAt">): Promise<VehicleData | null> {
+  try {
+    const res = await fetch("/api/vehicles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(vehicle),
+    });
+    const created = await res.json();
+    if (!res.ok) return null;
+    if (!_savedVehicles) _savedVehicles = [];
+    _savedVehicles.push(created);
+    return created;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateVehicle(id: string, updates: Partial<VehicleData>): Promise<boolean> {
+  if (_savedVehicles) {
+    const index = _savedVehicles.findIndex((v) => v.id === id);
+    if (index >= 0) _savedVehicles[index] = { ..._savedVehicles[index], ...updates, id };
+  }
+  try {
+    const res = await fetch("/api/vehicles", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, updates }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteVehicle(id: string): Promise<boolean> {
+  if (_savedVehicles) _savedVehicles = _savedVehicles.filter((v) => v.id !== id);
+  try {
+    const res = await fetch("/api/vehicles", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export const TRIPS: TripData[] = [
+  { id: "demo-1", from: "Douala", to: "Kribi", date: "2026-11-22", time: "07h00", vehicle: "V-001", price: 5000, company: "Star Voyages" },
+  { id: "demo-2", from: "Douala", to: "Kribi", date: "2026-11-23", time: "09h00", vehicle: "V-005", price: 4500, company: "Trans-Cameroun" },
+  { id: "demo-3", from: "Yaoundé", to: "Kribi", date: "2026-11-24", time: "06h00", vehicle: "V-006", price: 6000, company: "Trans-Cameroun" },
+  { id: "demo-4", from: "Douala", to: "Limbe", date: "2026-11-25", time: "08h00", vehicle: "V-001", price: 3000, company: "Star Voyages" },
+  { id: "demo-5", from: "Douala", to: "Limbe", date: "2026-11-26", time: "10h00", vehicle: "V-005", price: 2500, company: "Trans-Cameroun" },
+  { id: "demo-6", from: "Douala", to: "Buea", date: "2026-11-27", time: "08h30", vehicle: "V-003", price: 3500, company: "Star Voyages" },
+  { id: "demo-7", from: "Douala", to: "Buea", date: "2026-11-28", time: "11h00", vehicle: "V-006", price: 3000, company: "Trans-Cameroun" },
+  { id: "demo-8", from: "Douala", to: "Nkongsamba", date: "2026-11-29", time: "09h00", vehicle: "V-004", price: 4000, company: "Star Voyages" },
+  { id: "demo-9", from: "Douala", to: "Yaoundé", date: "2026-11-30", time: "06h00", vehicle: "V-002", price: 5000, company: "Trans-Cameroun" },
+  { id: "demo-10", from: "Douala", to: "Yaoundé", date: "2026-12-01", time: "14h00", vehicle: "V-001", price: 5500, company: "Star Voyages" },
+  { id: "demo-11", from: "Yaoundé", to: "Douala", date: "2026-12-02", time: "07h00", vehicle: "V-002", price: 5000, company: "Trans-Cameroun" },
+  { id: "demo-12", from: "Yaoundé", to: "Bafoussam", date: "2026-12-03", time: "06h30", vehicle: "V-002", price: 4500, company: "Trans-Cameroun" },
+  { id: "demo-13", from: "Yaoundé", to: "Foumban", date: "2026-12-04", time: "08h00", vehicle: "V-003", price: 5500, company: "Trans-Cameroun" },
+  { id: "demo-14", from: "Garoua", to: "Maroua", date: "2026-12-05", time: "09h00", vehicle: "V-004", price: 6000, company: "Trans-Cameroun" },
+  { id: "demo-15", from: "Yaoundé", to: "Kribi", date: "2026-12-06", time: "05h00", vehicle: "V-007", price: 6500, company: "CamTrans" },
 ];
 
 export interface TripData {
+  id?: string;
   from: string;
   to: string;
+  date: string;
   time: string;
   vehicle: string;
   price: number;
   company: string;
+  createdAt?: string;
 }
 
 let _savedTrips: TripData[] | null = null;
@@ -368,6 +449,10 @@ export async function loadTrips(): Promise<void> {
 
 export function getAllTrips(): TripData[] {
   return [..._savedTrips ?? [], ...TRIPS];
+}
+
+export function getSavedTrips(): TripData[] {
+  return [...(_savedTrips ?? [])];
 }
 
 export async function saveTrip(trip: TripData) {
@@ -392,6 +477,13 @@ export async function removeSavedTrip(index: number) {
       body: JSON.stringify({ index }),
     });
   } catch { /* ignore */ }
+}
+
+export async function removeSavedTripById(id: string): Promise<boolean> {
+  const index = (_savedTrips ?? []).findIndex((t) => t.id === id);
+  if (index === -1) return false;
+  await removeSavedTrip(index);
+  return true;
 }
 
 // --- Hôtels pour la carte / réservation ---

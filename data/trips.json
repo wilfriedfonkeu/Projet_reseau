@@ -1,10 +1,13 @@
 [
   {
+    "id": "trip_1782028800000",
     "from": "Douala",
     "to": "Yaoundé",
+    "date": "2026-11-23",
     "time": "7H00",
-    "vehicle": "V 010",
+    "vehicle": "V-002",
     "price": 15000,
-    "company": "Trans-Cameroun"
+    "company": "Trans-Cameroun",
+    "createdAt": "2026-11-21T08:00:00.000Z"
   }
 ]

@@ -5,12 +5,15 @@ import path from "path";
 const DATA_FILE = path.join(process.cwd(), "data", "trips.json");
 
 interface TripData {
+  id?: string;
   from: string;
   to: string;
+  date: string;
   time: string;
   vehicle: string;
   price: number;
   company: string;
+  createdAt?: string;
 }
 
 async function readTrips(): Promise<TripData[]> {
@@ -33,8 +36,22 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const trip = await request.json();
+  const body = await request.json();
   const trips = await readTrips();
+  const trip: TripData = {
+    id: String(body.id ?? `trip_${Date.now()}`),
+    from: String(body.from ?? "").trim(),
+    to: String(body.to ?? "").trim(),
+    date: String(body.date ?? "").trim(),
+    time: String(body.time ?? "").trim(),
+    vehicle: String(body.vehicle ?? "").trim(),
+    price: Number(body.price) || 0,
+    company: String(body.company ?? "").trim(),
+    createdAt: String(body.createdAt ?? new Date().toISOString()),
+  };
+  if (!trip.from || !trip.to || !trip.date || !trip.time || !trip.vehicle || trip.price <= 0 || !trip.company) {
+    return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
+  }
   trips.push(trip);
   await writeTrips(trips);
   return NextResponse.json(trip, { status: 201 });

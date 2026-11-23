@@ -1,0 +1,83 @@
+[
+  {
+    "id": "V-001",
+    "plate": "LT-123-AB",
+    "type": "Minibus 14 places",
+    "capacity": 14,
+    "status": "Disponible",
+    "company": "Star Voyages",
+    "createdAt": "2026-01-10T08:00:00.000Z"
+  },
+  {
+    "id": "V-002",
+    "plate": "LT-456-CD",
+    "type": "Bus 35 places",
+    "capacity": 35,
+    "status": "Disponible",
+    "company": "Trans-Cameroun",
+    "createdAt": "2026-01-12T08:00:00.000Z"
+  },
+  {
+    "id": "V-003",
+    "plate": "LT-789-EF",
+    "type": "Berline VIP",
+    "capacity": 4,
+    "status": "En mission",
+    "company": "Trans-Cameroun",
+    "createdAt": "2026-01-15T08:00:00.000Z"
+  },
+  {
+    "id": "V-004",
+    "plate": "LT-321-GH",
+    "type": "4x4 Tout-terrain",
+    "capacity": 7,
+    "status": "Disponible",
+    "company": "Star Voyages",
+    "createdAt": "2026-02-02T08:00:00.000Z"
+  },
+  {
+    "id": "V-005",
+    "plate": "LT-654-IJ",
+    "type": "Bus 28 places",
+    "capacity": 28,
+    "status": "Disponible",
+    "company": "Trans-Cameroun",
+    "createdAt": "2026-02-08T08:00:00.000Z"
+  },
+  {
+    "id": "V-006",
+    "plate": "LT-987-KL",
+    "type": "Minibus 18 places",
+    "capacity": 18,
+    "status": "Maintenance",
+    "company": "Trans-Cameroun",
+    "createdAt": "2026-02-20T08:00:00.000Z"
+  },
+  {
+    "id": "V-007",
+    "plate": "LT-147-MN",
+    "type": "Bus 45 places",
+    "capacity": 45,
+    "status": "Disponible",
+    "company": "CamTrans",
+    "createdAt": "2026-03-05T08:00:00.000Z"
+  },
+  {
+    "id": "V-008",
+    "plate": "JZAKLSÉÉ",
+    "type": "CARGO",
+    "capacity": 66,
+    "status": "Disponible",
+    "company": "bg services",
+    "createdAt": "2026-11-21T07:04:20.058Z"
+  },
+  {
+    "id": "V-009",
+    "plate": "TTT",
+    "type": "TAXI",
+    "capacity": 1055,
+    "status": "Disponible",
+    "company": "bg services",
+    "createdAt": "2026-11-21T07:04:55.051Z"
+  }
+]
