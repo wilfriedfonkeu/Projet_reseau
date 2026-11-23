@@ -1058,6 +1058,7 @@ let _savedMessages: MessageData[] = [];
 export async function loadSavedMessages(): Promise<void> {
   try {
     const res = await fetch("/api/messages");
+    if (!res.ok) throw new Error(`Messages indisponibles (${res.status})`);
     const data = await res.json();
     _savedMessages = Array.isArray(data) ? data : [];
   } catch {
@@ -1094,14 +1095,13 @@ export function getMessagesBetween(userId: string, otherId: string, packId?: str
 
 export async function sendMessage(msg: MessageData): Promise<void> {
   if (!_savedMessages) _savedMessages = [];
-  _savedMessages.push(msg);
-  try {
-    await fetch("/api/messages", {
+  const res = await fetch("/api/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(msg),
     });
-  } catch { /* ignore */ }
+  if (!res.ok) throw new Error("Le message n’a pas pu être envoyé.");
+  _savedMessages.push(msg);
 }
 
 export async function markMessagesRead(userId: string, otherId: string): Promise<void> {
@@ -1113,7 +1113,8 @@ export async function markMessagesRead(userId: string, otherId: string): Promise
     }
   }
   if (changed) {
-    try { await fetch("/api/messages", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, otherId }) }); } catch { /* ignore */ }
+    const res = await fetch("/api/messages", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, otherId }) });
+    if (!res.ok) throw new Error("La conversation n’a pas pu être marquée comme lue.");
   }
 }
 

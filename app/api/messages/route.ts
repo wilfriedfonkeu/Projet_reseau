@@ -24,21 +24,32 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const msg = await request.json();
-  const store = await readStore();
-  store.push(msg);
-  await writeStore(store);
-  return NextResponse.json({ success: true });
+  try {
+    const msg = await request.json();
+    if (!msg || typeof msg.id !== "string" || typeof msg.senderId !== "string" || typeof msg.receiverId !== "string" || typeof msg.text !== "string" || !msg.text.trim()) {
+      return NextResponse.json({ error: "Invalid message" }, { status: 400 });
+    }
+    const store = await readStore() as Array<{ id?: string }>;
+    if (store.some((item) => item.id === msg.id)) return NextResponse.json({ error: "Duplicate message" }, { status: 409 });
+    store.push({ ...msg, text: msg.text.trim() });
+    await writeStore(store);
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Message could not be saved" }, { status: 500 });
+  }
 }
 
 export async function PUT(request: Request) {
-  const { userId, otherId } = await request.json();
-  const store: any[] = await readStore();
-  for (const m of store) {
-    if (m.receiverId === userId && m.senderId === otherId && !m.read) {
-      m.read = true;
+  try {
+    const { userId, otherId } = await request.json();
+    if (typeof userId !== "string" || typeof otherId !== "string") return NextResponse.json({ error: "Invalid participants" }, { status: 400 });
+    const store: any[] = await readStore();
+    for (const m of store) {
+      if (m.receiverId === userId && m.senderId === otherId && !m.read) m.read = true;
     }
+    await writeStore(store);
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Conversation could not be updated" }, { status: 500 });
   }
-  await writeStore(store);
-  return NextResponse.json({ success: true });
 }

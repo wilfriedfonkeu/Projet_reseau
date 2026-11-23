@@ -44,9 +44,14 @@ function MessagesContent() {
       createdAt: new Date().toISOString(),
       read: false,
     };
-    await sendMessage(msg);
-    setSent(true);
-    setSending(false);
+    try {
+      await sendMessage(msg);
+      setSent(true);
+    } catch {
+      window.alert(t("message_send_error"));
+    } finally {
+      setSending(false);
+    }
   }
 
   if (!user) {

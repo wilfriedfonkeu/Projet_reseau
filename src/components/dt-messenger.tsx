@@ -185,7 +185,7 @@ export function DtMessenger({ agencyId, initialContactId, contactNonce }: DtMess
       // Chargement direct de /dashboard/agency?dm=<contactId>
       const directContact = new URLSearchParams(window.location.search).get("dm");
       if (directContact) selectContact(directContact, conversations);
-    });
+    }).catch(() => setMessagesReady(true));
   }, []);
 
   // Clic sur « Contacter » depuis une liste du dashboard : le messenger est déjà monté.
@@ -199,7 +199,7 @@ export function DtMessenger({ agencyId, initialContactId, contactNonce }: DtMess
       markConversationRead(user, selectedConv.withUserId).then(() => {
         setMessages(getMessagesForConversation(user, selectedConv.withUserId, selectedConv.packId));
         setConvs(getConversationsForUser(user));
-      });
+      }).catch(() => setMessages(getMessagesForConversation(user, selectedConv.withUserId, selectedConv.packId)));
     }
   }, [selectedConv, user]);
 
@@ -218,10 +218,14 @@ export function DtMessenger({ agencyId, initialContactId, contactNonce }: DtMess
       createdAt: new Date().toISOString(),
       read: false,
     };
-    await sendMessage(msg);
-    setInput("");
-    setMessages((prev) => [...prev, msg]);
-    setConvs(getConversationsForUser(user));
+    try {
+      await sendMessage(msg);
+      setInput("");
+      setMessages((prev) => [...prev, msg]);
+      setConvs(getConversationsForUser(user));
+    } catch {
+      window.alert(t("message_send_error"));
+    }
   }
 
   function getOtherUserInfo(otherId: string) {
