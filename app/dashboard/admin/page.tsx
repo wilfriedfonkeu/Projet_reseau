@@ -237,16 +237,34 @@ export default function AdminDashboard() {
   const activeReservations = reservations.filter((r) => r.status === "Confirmée" || r.status === "Terminée");
   const revenue = activeReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
   const commissions = Math.round(revenue * 0.1);
-  const monthReservations = reservations.filter((r) => {
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const monthReservationsList = reservations.filter((r) => {
     const date = new Date(r.createdAt);
-    const now = new Date();
-    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-  }).length;
+    return date >= currentMonthStart && date <= now;
+  });
+  const previousMonthReservations = reservations.filter((r) => {
+    const date = new Date(r.createdAt);
+    return date >= previousMonthStart && date < currentMonthStart;
+  });
+  const monthReservations = monthReservationsList.length;
+  const compareMonths = (current: number, previous: number) => {
+    if (previous === 0) return current ? (lang === "en" ? "New this month" : "Nouveau ce mois-ci") : (lang === "en" ? "No change" : "Stable");
+    const change = Math.round(((current - previous) / previous) * 100);
+    return `${change > 0 ? "+" : ""}${change}% ${lang === "en" ? "vs last month" : "vs mois dernier"}`;
+  };
+  const monthRevenue = monthReservationsList
+    .filter((r) => r.status === "Confirmée" || r.status === "Terminée")
+    .reduce((sum, r) => sum + (r.totalPrice || 0), 0);
+  const previousMonthRevenue = previousMonthReservations
+    .filter((r) => r.status === "Confirmée" || r.status === "Terminée")
+    .reduce((sum, r) => sum + (r.totalPrice || 0), 0);
   const kpis = [
-    { label: lang === "en" ? "Active partners" : "Partenaires actifs", value: String(partnerUsers.filter(isAccountActive).length), trend: `${partnerUsers.length} ${lang === "en" ? "total" : "au total"}` },
-    { label: lang === "en" ? "Registered tourists" : "Touristes inscrits", value: String(getAllUsers().filter((u) => u.role === "tourist").length), trend: lang === "en" ? "Current accounts" : "Comptes enregistrés" },
-    { label: lang === "en" ? "Bookings this month" : "Réservations ce mois", value: String(monthReservations), trend: `${reservations.length} ${lang === "en" ? "total" : "au total"}` },
-    { label: lang === "en" ? "Net revenue (FCFA)" : "Revenus nets (FCFA)", value: revenue.toLocaleString(), trend: lang === "en" ? "Confirmed and completed bookings" : "Réservations confirmées et terminées" },
+    { label: lang === "en" ? "Active partners" : "Partenaires actifs", value: String(partnerUsers.filter(isAccountActive).length), trend: `${partnerUsers.length} ${lang === "en" ? "total" : "au total"}`, target: "partners" },
+    { label: lang === "en" ? "Registered tourists" : "Touristes inscrits", value: String(getAllUsers().filter((u) => u.role === "tourist").length), trend: lang === "en" ? "Current accounts" : "Comptes enregistrés", target: "partners" },
+    { label: lang === "en" ? "Bookings this month" : "Réservations ce mois", value: String(monthReservations), trend: compareMonths(monthReservations, previousMonthReservations.length), target: "finance" },
+    { label: lang === "en" ? "Booking volume (FCFA)" : "Volume des réservations (FCFA)", value: revenue.toLocaleString(), trend: `${lang === "en" ? "This month" : "Ce mois-ci"} : ${monthRevenue.toLocaleString()} FCFA · ${compareMonths(monthRevenue, previousMonthRevenue)}`, target: "finance" },
   ];
   const monthData = Array.from({ length: 6 }, (_, i) => {
     const date = new Date(); date.setMonth(date.getMonth() - 5 + i);
@@ -269,9 +287,20 @@ export default function AdminDashboard() {
     <DashboardShell title={t("admin_title")} items={items} active={active} onChange={setActive}>
       {active === "overview" && (
         <div className="space-y-6">
+          <Card><CardContent className="p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><h3 className="font-bold">{lang === "en" ? "Needs your attention" : "À traiter en priorité"}</h3><p className="text-sm text-muted-foreground mt-1">{lang === "en" ? "Open pending bookings, partner reviews and unread messages." : "Accédez aux réservations en attente, partenaires à vérifier et messages non lus."}</p></div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => setActive("notifications")}>{lang === "en" ? "Alerts" : "Alertes"}<Badge className="ml-2 bg-[#EA580C]">{notifications.length}</Badge></Button>
+                <Button variant="outline" onClick={() => setActive("partners")}>{lang === "en" ? "Review partners" : "Vérifier les partenaires"}<Badge className="ml-2">{partnerUsers.filter((p) => !p.verified).length}</Badge></Button>
+                <Button variant="outline" onClick={() => setActive("messages")}>{lang === "en" ? "Unread messages" : "Messages non lus"}<Badge className="ml-2">{messages.filter((m) => !m.read).length}</Badge></Button>
+              </div>
+            </div>
+          </CardContent></Card>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {kpis.map((k) => (
-              <Card key={k.label}><CardContent className="p-5">
+              <Card key={k.label} role="button" tabIndex={0} onClick={() => setActive(k.target)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(k.target); } }} className="cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C]">
+                <CardContent className="p-5">
                 <div className="text-xs text-muted-foreground uppercase tracking-wide">{k.label}</div>
                 <div className="text-2xl font-bold mt-1">{k.value}</div>
                 <div className="text-xs text-[#EA580C] font-semibold mt-1">{k.trend}</div>
@@ -296,6 +325,26 @@ export default function AdminDashboard() {
                   <Bar dataKey="reservations" fill="#EA580C" radius={[6,6,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
+            </CardContent></Card>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card><CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3"><h3 className="font-bold">{lang === "en" ? "Recent bookings" : "Réservations récentes"}</h3><Button variant="ghost" size="sm" onClick={() => setActive("finance")}>{lang === "en" ? "View all" : "Tout voir"}</Button></div>
+              <div className="space-y-3">
+                {[...reservations].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5).map((r) => (
+                  <div key={r.ref} className="flex items-center justify-between gap-3 border-b last:border-0 pb-2 last:pb-0">
+                    <div className="min-w-0"><div className="font-medium truncate">{r.packName}</div><div className="text-xs text-muted-foreground">{r.ref} · {new Date(r.createdAt).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US")}</div></div>
+                    <div className="text-right shrink-0"><div className="text-sm font-semibold">{r.totalPrice.toLocaleString()} FCFA</div><Badge variant="secondary">{r.status}</Badge></div>
+                  </div>
+                ))}
+                {reservations.length === 0 && <p className="text-sm text-muted-foreground">{lang === "en" ? "No bookings yet." : "Aucune réservation pour le moment."}</p>}
+              </div>
+            </CardContent></Card>
+            <Card><CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3"><h3 className="font-bold">{lang === "en" ? "Commission estimate" : "Estimation des commissions"}</h3><DollarSign size={18} className="text-[#EA580C]" /></div>
+              <div className="text-2xl font-bold">{commissions.toLocaleString()} FCFA</div>
+              <p className="text-sm text-muted-foreground mt-1">{lang === "en" ? "Estimated at 10% of confirmed and completed booking volume." : "Estimée à 10 % du volume des réservations confirmées et terminées."}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => setActive("finance")}>{lang === "en" ? "Open finance" : "Ouvrir les finances"}</Button>
             </CardContent></Card>
           </div>
         </div>
