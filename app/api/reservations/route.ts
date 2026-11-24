@@ -30,3 +30,13 @@ export async function POST(request: Request) {
   await writeStore(store);
   return NextResponse.json({ success: true });
 }
+
+export async function PUT(request: Request) {
+  const { ref, status } = await request.json();
+  const store: any[] = await readStore();
+  const index = store.findIndex(r => r.ref === ref);
+  if (index === -1) return NextResponse.json({ success: false }, { status: 404 });
+  store[index] = { ...store[index], status };
+  await writeStore(store);
+  return NextResponse.json({ success: true, reservation: store[index] });
+}

@@ -18,6 +18,7 @@ export interface DtUser {
   city?: string;
   specialty?: string;     // guide
   languages?: string[];   // guide
+  guideId?: string;       // guide touristique
   plan?: string;          // agence
   verified?: boolean;
   createdAt: string;
@@ -79,6 +80,7 @@ export const DEMO_ACCOUNTS: DtUser[] = [
     city: "Kribi",
     specialty: "Eco-tourisme & Randonnée",
     languages: ["Français", "Anglais", "Bassa"],
+    guideId: "g11",
     verified: true,
     createdAt: "2025-10-01",
   },
@@ -94,6 +96,7 @@ export const DEMO_ACCOUNTS: DtUser[] = [
     city: "Yaoundé",
     specialty: "Patrimoine culturel & Histoire",
     languages: ["Français", "Anglais", "Ewondo"],
+    guideId: "g4",
     verified: true,
     createdAt: "2025-09-20",
   },
@@ -372,6 +375,11 @@ export function updateProfile(updates: Partial<DtUser>): DtUser | null {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   notifyAuthChange();
   return updated;
+}
+
+// ─── Récupérer tous les utilisateurs ───────────────────────────────────────
+export function getAllUsers(): DtUser[] {
+  return getUsers();
 }
 
 export function getUserById(id: string): DtUser | undefined {

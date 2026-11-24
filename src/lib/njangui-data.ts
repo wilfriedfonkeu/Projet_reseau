@@ -236,6 +236,7 @@ export interface ReviewData {
   rating: number;
   text: string;
   createdAt: string;
+  guideId?: string;
 }
 
 export const REVIEWS: ReviewData[] = [
@@ -566,8 +567,8 @@ export function getCustomOfferCount() {
 
 let _savedReservations: ReservationData[] | null = null;
 
-export async function loadSavedReservations(): Promise<void> {
-  if (_savedReservations !== null) return;
+export async function loadSavedReservations(force = false): Promise<void> {
+  if (_savedReservations !== null && !force) return;
   try {
     const res = await fetch("/api/reservations");
     const data = await res.json();
@@ -590,6 +591,17 @@ export function getReservationsByAgency(agencyId: string): ReservationData[] {
   return getAllReservations().filter(r => packIds.includes(r.packId));
 }
 
+export async function updateReservationStatus(ref: string, status: ReservationData["status"]): Promise<void> {
+  if (_savedReservations) {
+    _savedReservations = _savedReservations.map(r => r.ref === ref ? { ...r, status } : r);
+  }
+  await fetch("/api/reservations", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ref, status }),
+  }).catch(() => undefined);
+}
+
 export async function pushReservation(res: ReservationData): Promise<void> {
   if (!_savedReservations) _savedReservations = [];
   _savedReservations.unshift(res);
@@ -606,8 +618,8 @@ export async function pushReservation(res: ReservationData): Promise<void> {
 
 let _savedReviews: ReviewData[] | null = null;
 
-export async function loadSavedReviews(): Promise<void> {
-  if (_savedReviews !== null) return;
+export async function loadSavedReviews(force = false): Promise<void> {
+  if (_savedReviews !== null && !force) return;
   try {
     const res = await fetch("/api/reviews");
     const data = await res.json();

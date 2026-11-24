@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getCurrentUser, DtUser } from "@/src/lib/auth-store";
-import { getConversations, getMessagesBetween, sendMessage, markMessagesRead, getAllMessages, MessageData, loadSavedMessages, AGENCIES } from "@/src/lib/njangui-data";
+import { getCurrentUser, getUserById, getAllUsers, DtUser } from "@/src/lib/auth-store";
+import { getConversations, getMessagesBetween, sendMessage, markMessagesRead, getAllMessages, MessageData, loadSavedMessages, AGENCIES, loadSavedReservations, getAllReservations } from "@/src/lib/njangui-data";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Send, MessageCircle, ArrowLeft } from "lucide-react";
@@ -14,16 +14,46 @@ export function DtMessenger() {
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [input, setInput] = useState("");
   const [showMobileList, setShowMobileList] = useState(true);
+  const [availableContacts, setAvailableContacts] = useState<DtUser[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const u = getCurrentUser();
     setUser(u);
-    loadSavedMessages().then(() => {
+
+    const refresh = async () => {
+      await Promise.all([loadSavedMessages(), loadSavedReservations(true)]);
       if (u) {
         setConvs(getConversations(u.id));
+        const reservations = getAllReservations();
+        let contacts: DtUser[] = [];
+        if (u.role === "guide") {
+          const guideId = u.guideId ?? (u.email.includes("mboma") ? "g11" : u.email.includes("fouda") ? "g4" : "");
+          const touristIds = reservations
+            .filter(r => r.guideId === guideId || r.guideName?.includes(u.firstName))
+            .map(r => r.userId);
+          contacts = getAllUsers().filter(person => person.role === "tourist" && touristIds.includes(person.id));
+        } else if (u.role === "tourist") {
+          const guideNames = reservations
+            .filter(r => r.userId === u.id)
+            .map(r => r.guideName)
+            .filter(Boolean) as string[];
+          contacts = getAllUsers().filter(person =>
+            person.role === "guide" && (person.guideId === reservations.find(r => r.userId === u.id)?.guideId || guideNames.includes(`${person.firstName} ${person.lastName}`))
+          );
+        }
+        setAvailableContacts(contacts);
+        setSelectedConv(current => {
+          if (!current) return null;
+          setMessages(getMessagesBetween(u.id, current.withUserId, current.packId));
+          return current;
+        });
       }
-    });
+    };
+    refresh();
+
+    const interval = window.setInterval(refresh, 4000);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -55,9 +85,16 @@ export function DtMessenger() {
   }
 
   function getOtherUserInfo(otherId: string) {
+    const knownUser = getUserById(otherId);
+    if (knownUser) {
+      return {
+        name: knownUser.companyName ?? `${knownUser.firstName} ${knownUser.lastName}`,
+        avatar: knownUser.avatar ?? "",
+      };
+    }
     const agency = AGENCIES.find(a => a.id === otherId || (a as any).userId === otherId);
     if (agency) return { name: agency.name, avatar: agency.logo };
-    return { name: otherId, avatar: "" };
+    return { name: "Utilisateur NJANGUI", avatar: "" };
   }
 
   function formatDate(iso: string) {
@@ -117,6 +154,40 @@ export function DtMessenger() {
             })
           )}
         </div>
+
+        {availableContacts.length > 0 && (
+          <div className="border-b p-3 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+              {user.role === "guide" ? "Touristes à contacter" : "Mes guides"}
+            </div>
+            {availableContacts.map(contact => (
+              <button
+                key={contact.id}
+                type="button"
+                onClick={() => {
+                  setSelectedConv({ withUserId: contact.id });
+                  setShowMobileList(false);
+                  setMessages(getMessagesBetween(user.id, contact.id));
+                }}
+                className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-muted/60"
+              >
+                {contact.avatar ? (
+                  <img src={contact.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#EA580C]/10 text-[#EA580C] flex items-center justify-center text-xs font-bold">
+                    {contact.firstName.charAt(0)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold truncate">
+                    {contact.companyName ?? `${contact.firstName} ${contact.lastName}`}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">{contact.specialty ?? (contact.role === "tourist" ? "Touriste" : "Guide")}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Message thread */}

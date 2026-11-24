@@ -528,6 +528,7 @@ export default function TouristDashboard() {
                     disabled={!reviewForm.text.trim()}
                     onClick={async () => {
                       if (!user) return;
+                      const reservation = myReservations.find(r => r.packId === reviewForm.packId);
                       const rev: ReviewData = {
                         id: `rev_${Date.now()}`,
                         packId: reviewForm.packId,
@@ -537,6 +538,7 @@ export default function TouristDashboard() {
                         rating: reviewForm.rating,
                         text: reviewForm.text,
                         createdAt: new Date().toISOString().split("T")[0],
+                        guideId: reservation?.guideId,
                       };
                       await pushReview(rev);
                       setMyReviews(prev => [rev, ...prev]);
