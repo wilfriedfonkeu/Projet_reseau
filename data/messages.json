@@ -110,5 +110,21 @@
     "text": "salut",
     "createdAt": "2026-11-20T14:58:40.886Z",
     "read": true
+  },
+  {
+    "id": "msg_1795443568574",
+    "senderId": "usr_099",
+    "receiverId": "usr_020",
+    "text": "Bonjour",
+    "createdAt": "2026-11-23T14:19:28.574Z",
+    "read": false
+  },
+  {
+    "id": "msg_1795443585632",
+    "senderId": "usr_099",
+    "receiverId": "usr_020",
+    "text": "Comment pouvons nous vous aider?",
+    "createdAt": "2026-11-23T14:19:45.632Z",
+    "read": false
   }
 ]
