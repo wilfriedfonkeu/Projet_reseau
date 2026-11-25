@@ -1,6 +1,34 @@
 {
   "custom": [
     {
+      "id": "off_1795172879526",
+      "location": "douala",
+      "lat": 4.05,
+      "lng": 9.7,
+      "name": "JOIE",
+      "category": "Détente",
+      "duration": "3 jours",
+      "desc": "beau",
+      "image": "/images/agency-uploads/vasion-cameroun/1795172875728-0x5m8d.jpg",
+      "agencyId": "ag1",
+      "price": 454000,
+      "guideIds": [
+        "g9",
+        "g6",
+        "g2"
+      ],
+      "hotelPartnerIds": [
+        "par2"
+      ],
+      "transportPartnerIds": [
+        "par4"
+      ],
+      "hotelPartnerId": "par2",
+      "transportPartnerId": "par4",
+      "places": 2,
+      "agencyMargin": 40000
+    },
+    {
       "id": "off_1781703222738",
       "location": "Kribi",
       "lat": 2.9395,
@@ -15,7 +43,6 @@
     }
   ],
   "hidden": [
-    "p1",
-    "p15"
+    "p1"
   ]
 }

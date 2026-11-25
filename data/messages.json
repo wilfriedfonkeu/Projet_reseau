@@ -72,6 +72,46 @@
     "read": false
   },
   {
+    "id": "msg_1795160969486",
+    "senderId": "usr_020",
+    "receiverId": "usr_099",
+    "text": "bonjour",
+    "createdAt": "2026-11-20T07:49:29.486Z",
+    "read": true
+  },
+  {
+    "id": "msg_1795162117876",
+    "senderId": "usr_020",
+    "receiverId": "partner_par1",
+    "text": "salut",
+    "createdAt": "2026-11-20T08:08:37.876Z",
+    "read": false
+  },
+  {
+    "id": "msg_1795186617174",
+    "senderId": "usr_1795013068012",
+    "receiverId": "usr_030",
+    "text": "bonjour",
+    "createdAt": "2026-11-20T14:56:57.174Z",
+    "read": false
+  },
+  {
+    "id": "msg_1795186663662",
+    "senderId": "usr_1795013068012",
+    "receiverId": "usr_020",
+    "text": "bonjour",
+    "createdAt": "2026-11-20T14:57:43.662Z",
+    "read": true
+  },
+  {
+    "id": "msg_1795186720886",
+    "senderId": "usr_020",
+    "receiverId": "usr_1795013068012",
+    "text": "salut",
+    "createdAt": "2026-11-20T14:58:40.886Z",
+    "read": true
+  },
+  {
     "id": "msg_1795244752566",
     "senderId": "usr_1795241289104",
     "receiverId": "usr_099",

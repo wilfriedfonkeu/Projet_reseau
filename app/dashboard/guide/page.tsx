@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { DashboardShell } from "@/src/components/dt-sidebar";
-import { Map, CalendarCheck, Star, User, BarChart3, MessageSquare } from "lucide-react";
+import { Map, CalendarCheck, Star, User, BarChart3, MessageSquare, Camera } from "lucide-react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
@@ -23,6 +23,7 @@ export default function GuideDashboard() {
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [specialty, setSpecialty] = useState(user?.specialty ?? "");
   const [city, setCity] = useState(user?.city ?? "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const router = useRouter();
   const { t } = useLang();
   const items = [
@@ -48,6 +49,29 @@ export default function GuideDashboard() {
   const handleSave = () => {
     const updated = updateProfile({ firstName, lastName, phone, specialty, city });
     if (updated) { toast.success(t("profile_updated_guide")); }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("agency", `${user?.firstName ?? "guide"}-${user?.lastName ?? ""}`);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) {
+        updateProfile({ avatar: data.url });
+        toast.success(t("profile_photo_updated"));
+      } else {
+        toast.error(t("error_occurred"));
+      }
+    } catch {
+      toast.error(t("error_occurred"));
+    }
+    setUploadingAvatar(false);
+    e.target.value = "";
   };
 
   const visits = [
@@ -175,7 +199,27 @@ export default function GuideDashboard() {
       {active === "profile" && (
         <Card>
           <CardContent className="p-6 space-y-4 max-w-xl">
-            <h3 className="font-bold text-[#9A3412] text-lg">{t("profile_guide_heading")}</h3>
+            <div className="flex items-center gap-4 mb-2">
+              <label className="relative shrink-0 cursor-pointer" title={t("profile_photo_hint")}>
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="" className="h-16 w-16 rounded-full object-cover border-2 border-[#EA580C]/20" />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-[#EA580C]/10 flex items-center justify-center text-[#EA580C] text-xl font-bold">
+                    {(user?.firstName[0] ?? "") + (user?.lastName[0] ?? "")}
+                  </div>
+                )}
+                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#EA580C] text-white ring-2 ring-background">
+                  <Camera size={13} />
+                </span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+              </label>
+              <div>
+                <h3 className="font-bold text-[#9A3412] text-lg">{t("profile_guide_heading")}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {uploadingAvatar ? t("modal_offer_uploading") : t("profile_photo_hint")}
+                </p>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>{t("first_name_field")}</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
               <div><Label>{t("last_name_field")}</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>

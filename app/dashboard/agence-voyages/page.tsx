@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { DashboardShell } from "@/src/components/dt-sidebar";
-import { Bus, CalendarRange, ClipboardList, User, BarChart3, MessageSquare, Plus, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Bus, CalendarRange, ClipboardList, User, BarChart3, MessageSquare, Plus, Trash2, CheckCircle2, AlertCircle, Camera } from "lucide-react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
@@ -55,6 +55,7 @@ export default function TransportDashboard() {
   const [trips, setTrips] = useState<TripData[]>([]);
   const [reservations, setReservations] = useState<ReservationData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [plate, setPlate] = useState("");
@@ -133,6 +134,29 @@ export default function TransportDashboard() {
   const handleSaveProfile = () => {
     const updated = updateProfile({ companyName, phone, city });
     if (updated) toast.success(t("profile_updated_transport"));
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("agency", user?.companyName ?? user?.firstName ?? "agence-voyages");
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) {
+        updateProfile({ avatar: data.url });
+        toast.success(t("profile_photo_updated"));
+      } else {
+        toast.error(t("modal_offer_upload_failed"));
+      }
+    } catch {
+      toast.error(t("modal_offer_upload_failed"));
+    }
+    setUploadingAvatar(false);
+    e.target.value = "";
   };
 
   const handleAddVehicle = async () => {
@@ -490,7 +514,27 @@ export default function TransportDashboard() {
       {active === "profile" && (
         <Card>
           <CardContent className="p-6 space-y-4 max-w-xl">
-            <h3 className="font-bold text-foreground text-lg">{t("profile_transport_heading")}</h3>
+            <div className="flex items-center gap-4 mb-2">
+              <label className="relative shrink-0 cursor-pointer" title={t("profile_photo_hint")}>
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="" className="h-16 w-16 rounded-full object-cover border-2 border-[#EA580C]/20" />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-[#EA580C]/10 flex items-center justify-center text-[#EA580C] text-xl font-bold">
+                    {(user?.companyName?.[0] ?? user?.firstName?.[0] ?? "") + (user?.lastName?.[0] ?? "")}
+                  </div>
+                )}
+                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#EA580C] text-white ring-2 ring-background">
+                  <Camera size={13} />
+                </span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+              </label>
+              <div>
+                <h3 className="font-bold text-foreground text-lg">{t("profile_transport_heading")}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {uploadingAvatar ? t("modal_offer_uploading") : t("profile_photo_hint")}
+                </p>
+              </div>
+            </div>
             <div><Label>{t("company_name_label_transport")}</Label><Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></div>
             <div><Label>{t("email_field")}</Label><Input defaultValue={user?.email} disabled className="opacity-60" /></div>
             <div><Label>{t("phone_field")}</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>

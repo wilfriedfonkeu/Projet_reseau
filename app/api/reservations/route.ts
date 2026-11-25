@@ -30,3 +30,24 @@ export async function POST(request: Request) {
   await writeStore(store);
   return NextResponse.json({ success: true });
 }
+
+/** Met à jour une réservation (annulation). Crée aussi une surcharge pour les réservations intégrées. */
+export async function PATCH(request: Request) {
+  const reservation = await request.json();
+  const store = await readStore() as Array<{ ref?: string }>;
+  const index = store.findIndex((r) => r.ref === reservation.ref);
+  if (index >= 0) store[index] = reservation;
+  else store.push(reservation);
+  await writeStore(store);
+  return NextResponse.json({ success: true });
+}
+
+/** Supprime une réservation. Un tombeau conserve l'effacement des réservations intégrées. */
+export async function DELETE(request: Request) {
+  const { ref } = await request.json();
+  const store = await readStore() as Array<{ ref?: string }>;
+  const next = store.filter((r) => r.ref !== ref);
+  next.push({ ref, _deleted: true } as never);
+  await writeStore(next);
+  return NextResponse.json({ success: true });
+}

@@ -9,7 +9,7 @@ import { Input } from "@/src/components/ui/input";
 import { Badge } from "@/src/components/ui/badge";
 import { Label } from "@/src/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
-import { getPublicPacks, AGENCIES } from "@/src/lib/njangui-data";
+import { getPublicPacks, getActiveAgencies, AGENCIES } from "@/src/lib/njangui-data";
 import { useOffersLoader } from "@/src/hooks/use-offers-loader";
 import { Search as SearchIcon, Filter, Clock, MapPin } from "lucide-react";
 import { useLang } from "@/src/lib/lang";
@@ -90,7 +90,7 @@ function SearchContent() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Toutes">{t("all_agencies")}</SelectItem>
-                  {AGENCIES.map(a => (
+                  {getActiveAgencies().map(a => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))}
                 </SelectContent>

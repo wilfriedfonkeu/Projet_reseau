@@ -1,18 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DtNavbar, DtFooter } from "@/src/components/dt-navbar";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { CheckCircle2, Building2, Mail, CreditCard, BarChart3 } from "lucide-react";
-import { SUBSCRIPTION_PLANS, COMMISSION_RATE } from "@/src/lib/njangui-data";
+import { COMMISSION_RATE, getPublishedSubscriptionPlans, loadSubscriptionPlans, type SubscriptionPlan } from "@/src/lib/njangui-data";
 import { toast } from "sonner";
 import { useLang } from "@/src/lib/lang";
 
 export default function PricingPage() {
   const router = useRouter();
   const { t } = useLang();
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(getPublishedSubscriptionPlans());
+
+  useEffect(() => {
+    loadSubscriptionPlans().then(() => setPlans([...getPublishedSubscriptionPlans()]));
+  }, []);
 
   return (
     <div style={{ fontFamily: "Nunito, sans-serif" }} className="bg-background">
@@ -62,7 +68,7 @@ export default function PricingPage() {
           {t("plans_desc")}
         </p>
         <div className="grid md:grid-cols-3 gap-6">
-          {SUBSCRIPTION_PLANS.map((p) => (
+          {plans.map((p) => (
             <Card key={p.id} className={`relative ${p.popular ? "border-2 border-[#EA580C] shadow-2xl scale-[1.02]" : ""}`}>
               {p.popular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#EA580C] text-white text-xs font-bold px-3 py-1 rounded-full">{t("recommended")}</div>}
               <CardContent className="p-7 text-center">
