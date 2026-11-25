@@ -14,8 +14,47 @@ import { useOffersLoader } from "@/src/hooks/use-offers-loader";
 import { useLang } from "@/src/lib/lang";
 import {
   Search, MapPin, Clock, Star, ChevronLeft, ChevronRight,
-  Plane, Compass, Hotel, Building2, ArrowRight, Shield, Headphones
+  Plane, Compass, Hotel, Building2, ArrowRight, Shield
 } from "lucide-react";
+
+const HOTELS_LIST = [
+  {
+    id: "hotel-ilomba",
+    name: "L'Hôtel Ilomba",
+    city: "Kribi",
+    image: encodeURI("/images/hotels/L'Hôtel Ilomba (Kribi).jpeg"),
+    desc: "Confort moderne et accueil chaleureux près de la côte de Kribi.",
+    price: 45000,
+    rating: 4.7,
+  },
+  {
+    id: "hotel-bobende",
+    name: "Le Fini Hotel Bobende",
+    city: "Limbé",
+    image: encodeURI("/images/hotels/Le Fini Hotel Bobende (Limbé).jpg"),
+    desc: "Détente et brise marine à Limbé dans un cadre agréable.",
+    price: 55000,
+    rating: 4.8,
+  },
+  {
+    id: "hotel-artisanat",
+    name: "L'Hôtel de l'Artisanat",
+    city: "Foumban",
+    image: encodeURI("/images/hotels/L'Hôtel de l'Artisanat (Foumban).webp"),
+    desc: "Charme authentique et décoration inspirée des traditions de Foumban.",
+    price: 38000,
+    rating: 4.6,
+  },
+  {
+    id: "hotel-bouba",
+    name: "Le Bouba Ndjida Safari Lodge",
+    city: "Nord",
+    image: encodeURI("/images/hotels/Le Bouba Ndjida Safari Lodge.jpeg"),
+    desc: "Évasion nature et sérénité aux portes des grands espaces du Nord.",
+    price: 62000,
+    rating: 4.9,
+  },
+];
 
 export default function HomePage() {
   useOffersLoader();
@@ -147,7 +186,7 @@ export default function HomePage() {
                   <span className="flex items-center gap-1 text-[#EA580C] font-semibold">
                     <Star size={12} className="fill-[#EA580C]" /> {a.rating}
                   </span>
-                    <span className="text-muted-foreground">{getPublicPacks().filter(p => p.agencyId === a.id).length} {t("offers_count")}</span>
+                  <span className="text-muted-foreground">{getPublicPacks().filter(p => p.agencyId === a.id).length} {t("offers_count")}</span>
                 </div>
                 <Button size="sm" variant="outline" className="w-full mt-4 border-[#EA580C] text-[#EA580C] hover:bg-[#EA580C] hover:text-white"
                   onClick={() => router.push(`/search?agency=${a.id}`)}>
@@ -210,7 +249,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CIRCUITS ── */}
+      {/* ── CIRCUITS (AVEC VIDÉOS LOCALES ET DESCRIPTIONS) ── */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-5">
           <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
@@ -218,24 +257,52 @@ export default function HomePage() {
           </h2>
           <p className="text-muted-foreground mb-8">{t("our_circuits_desc")}</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {CIRCUITS.map((c) => (
-              <Card key={c.id} className="overflow-hidden hover:shadow-xl transition-all p-0 bg-card group">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={c.image} alt={c.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-bold mb-1">{c.name}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{c.desc}</p>
-                  <div className="flex justify-between items-center text-sm mb-3">
-                    <span className="text-muted-foreground flex items-center gap-1"><Clock size={12}/>{c.duration}</span>
-                    <span className="font-bold text-[#EA580C]">{c.price.toLocaleString()} {t("fcfa")}</span>
+            {CIRCUITS.map((c) => {
+              const idLower = `${c.id} ${c.name}`.toLowerCase();
+              let videoSrc = "/videos/circuit-cote.mp4";
+              let videoCaption = "Aperçu vidéo : faune sauvage, grands espaces et découverte côtière.";
+
+              if (idLower.includes("volcan")) {
+                videoSrc = "/videos/circuit-volcans.mp4";
+                videoCaption = "Aperçu vidéo : forêt brumeuse, arbres d'altitude et reliefs volcaniques.";
+              } else if (idLower.includes("ancestral") || idLower.includes("ouest")) {
+                videoSrc = "/videos/circuit-ancestral.mp4";
+                videoCaption = "Aperçu vidéo : éléphants en liberté, nature sauvage et patrimoine.";
+              } else if (idLower.includes("adamaoua") || idLower.includes("lac") || idLower.includes("nord")) {
+                videoSrc = "/videos/circuit-adamaoua.mp4";
+                videoCaption = "Aperçu vidéo : lac paisible, collines verdoyantes et grands espaces.";
+              }
+
+              return (
+                <Card key={c.id} className="overflow-hidden hover:shadow-xl transition-all p-0 bg-card group border-t-2 border-[#EA580C]">
+                  <div className="aspect-[4/3] overflow-hidden bg-black relative">
+                    <video
+                      src={videoSrc}
+                      preload="auto"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    />
                   </div>
-                  <Button size="sm" onClick={() => reserve(c.id, true)} className="w-full bg-[#EA580C] hover:bg-[#C2410C]">
-                    {t("reserve_btn")}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardContent className="p-4">
+                    <h3 className="font-bold mb-1">{c.name}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{c.desc}</p>
+                    <p className="text-xs font-medium text-[#EA580C]/90 bg-[#EA580C]/5 rounded-lg p-2 mb-3">
+                      {videoCaption}
+                    </p>
+                    <div className="flex justify-between items-center text-sm mb-3">
+                      <span className="text-muted-foreground flex items-center gap-1"><Clock size={12} />{c.duration}</span>
+                      <span className="font-bold text-[#EA580C]">{c.price.toLocaleString()} {t("fcfa")}</span>
+                    </div>
+                    <Button size="sm" onClick={() => reserve(c.id, true)} className="w-full bg-[#EA580C] hover:bg-[#C2410C]">
+                      {t("reserve_btn")}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -264,6 +331,66 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── HÔTELS (SOUS DESTINATIONS PHARES) ── */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-5">
+          <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Nos <span className="text-[#EA580C]">Hôtels</span> partenaires
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                Des hébergements sélectionnés pour leur confort, leur accueil et leur proximité avec vos destinations.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/search")}
+              className="border-[#EA580C] text-[#EA580C] hover:bg-[#EA580C] hover:text-white"
+            >
+              <Hotel size={16} className="mr-1.5" /> Voir tous les hébergements <ArrowRight size={16} className="ml-1" />
+            </Button>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {HOTELS_LIST.map((h) => (
+              <Card key={h.id} className="overflow-hidden hover:shadow-xl transition-all p-0 bg-card group border-t-4 border-[#EA580C] rounded-2xl">
+                <div className="aspect-[4/3] overflow-hidden relative bg-muted">
+                  <img
+                    src={h.image}
+                    alt={h.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                  />
+                  <div className="absolute top-3 right-3 bg-background/95 backdrop-blur px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow">
+                    <Star size={12} className="fill-[#EA580C] text-[#EA580C]" />
+                    <span>{h.rating}</span>
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    <MapPin size={12} className="text-[#EA580C]" />
+                    <span>{h.city}</span>
+                  </div>
+                  <h3 className="font-bold text-base text-foreground mb-1">{h.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{h.desc}</p>
+                  <div className="flex items-center justify-between text-sm mb-3">
+                    <span className="text-xs text-muted-foreground">À partir de</span>
+                    <span className="font-bold text-[#EA580C]">{h.price.toLocaleString()} {t("fcfa")}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => router.push(`/search?destination=${encodeURIComponent(h.city)}`)}
+                    className="w-full bg-[#EA580C] hover:bg-[#C2410C] text-white"
+                  >
+                    Découvrir l&apos;hôtel
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── CONFIGURATEUR VOYAGE SUR MESURE ── */}
       <section className="py-16 bg-gradient-to-br from-[#EA580C]/5 to-[#F97316]/10">
         <div className="max-w-4xl mx-auto px-5">
@@ -280,7 +407,7 @@ export default function HomePage() {
                     i === step ? "bg-[#EA580C] text-white ring-4 ring-[#EA580C]/30 scale-110" :
                     "bg-muted text-muted-foreground"
                   }`}>{i + 1}</div>
-                    <span className="text-xs font-semibold hidden sm:block text-muted-foreground">{s}</span>
+                  <span className="text-xs font-semibold hidden sm:block text-muted-foreground">{s}</span>
                 </div>
               ))}
             </div>
