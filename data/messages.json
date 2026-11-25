@@ -134,5 +134,13 @@
     "text": "ta tete",
     "createdAt": "2026-11-21T07:18:36.640Z",
     "read": true
+  },
+  {
+    "id": "msg_1795502036976",
+    "senderId": "usr_1795241289104",
+    "receiverId": "usr_020",
+    "text": "nksbclKbWK,",
+    "createdAt": "2026-11-24T06:33:56.976Z",
+    "read": true
   }
 ]
