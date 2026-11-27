@@ -27,7 +27,9 @@ const QUICK_LOGINS = [
 
 function AuthPageContent() {
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab");
+  const requestedRole = searchParams.get("role") as UserRole | null;
+  const agencySignup = requestedRole === "agency";
+  const tab = searchParams.get("tab") ?? (agencySignup ? "signup" : null);
   const router = useRouter();
   const { t } = useLang();
 
@@ -47,16 +49,19 @@ function AuthPageContent() {
   const [regPhone, setRegPhone] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
-  const [regRole, setRegRole] = useState<UserRole>("tourist");
+  const [regRole, setRegRole] = useState<UserRole>(
+    requestedRole && ROLE_REDIRECT[requestedRole] ? requestedRole : "tourist"
+  );
   const [regCompany, setRegCompany] = useState("");
+
+  const upgradingFromTourist = agencySignup && user?.role === "tourist";
 
   // Rediriger si déjà connecté
   useEffect(() => {
-    if (user) {
-      const to = ROLE_REDIRECT[user.role];
-      if (to) router.replace(to);
-    }
-  }, [user, router]);
+    if (!user || upgradingFromTourist) return;
+    const to = ROLE_REDIRECT[user.role];
+    if (to) router.replace(to);
+  }, [user, upgradingFromTourist, router]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

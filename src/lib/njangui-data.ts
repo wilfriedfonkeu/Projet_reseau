@@ -85,7 +85,51 @@ export const AGENCIES = [
 ];
 
 // --- Packs touristiques ---
-export const PACKS = [
+export interface CircuitSite {
+  id: string;
+  name: string;
+  city: string;
+  desc: string;
+  image?: string;
+  lat?: number;
+  lng?: number;
+  guideIds?: string[];
+  hotelPartnerIds?: string[];
+  hotelName?: string;
+  transportPartnerIds?: string[];
+}
+
+export type PackItem = {
+  id: string;
+  location: string;
+  lat: number;
+  lng: number;
+  name: string;
+  category: string;
+  price: number;
+  duration: string;
+  desc: string;
+  image: string;
+  agencyId: string;
+  type?: "circuit";
+  hotelId?: string;
+  images?: string[];
+  guideIds?: string[];
+  hotelPartnerId?: string;
+  transportPartnerId?: string;
+  hotelPartnerIds?: string[];
+  transportPartnerIds?: string[];
+  agencyMargin?: number;
+  places?: number;
+  sites?: CircuitSite[];
+};
+
+export interface Circuit extends PackItem {
+  type: "circuit";
+  sites: CircuitSite[];
+}
+
+export const PACKS: PackItem[] = [
   { id: "p2", location: "Buea", lat: 4.1581, lng: 9.2625, name: "Mont Cameroun Trek", category: "Aventure", price: 320000, duration: "4 jours", desc: "Ascension du toit de l'Afrique de l'Ouest avec guide certifié.", image: "/images/mont-cameroun/mont cameroun.jpg", agencyId: "ag2", hotelId: "h23" },
   { id: "p3", location: "Yaoundé", lat: 3.8667, lng: 11.5167, name: "Yaoundé Luxe", category: "Luxe", price: 540000, duration: "5 jours", desc: "Hôtels 5 étoiles, musées et gastronomie camerounaise.", image: "/images/site-ebogo/Site touristique d'ebogo 1.jpg", agencyId: "ag2" },
   { id: "p4", location: "Limbe", lat: 4.0178, lng: 9.2063, name: "Limbe & Volcan", category: "Aventure", price: 260000, duration: "3 jours", desc: "Plage de sable noir volcanique et collines verdoyantes.", image: "/images/plages/down-beach/down-beach.jpg", agencyId: "ag1", hotelId: "h20" },
@@ -106,12 +150,240 @@ export const PACKS = [
 ];
 
 // --- Circuits ---
-export const CIRCUITS = [
-  { id: "c1", name: "Côte Atlantique", duration: "7 jours", price: 350000, desc: "De Douala à Kribi en longeant la côte.", image: "/images/chutes-lobe/Chutes de la Lobé 3.jpg" },
-  { id: "c2", name: "Route des Volcans", duration: "5 jours", price: 280000, desc: "Mont Cameroun, Limbe et le lac Barombi.", image: "/images/mont-cameroun/mont cameroun1.jpg" },
-  { id: "c3", name: "Cameroun Ancestral", duration: "8 jours", price: 420000, desc: "Sites UNESCO, chefferies de l'Ouest.", image: "/images/palais-bamoun/Palais des sultans Bamoun1.jpg" },
-  { id: "c4", name: "Adamaoua & Lac", duration: "6 jours", price: 310000, desc: "Plateau de l'Adamaoua et le lac Tison.", image: "/images/parc-waza/Parc National de Waza 4.jpg" },
+export const CIRCUITS: Circuit[] = [
+  {
+    id: "c1",
+    type: "circuit",
+    name: "L'Émeraude des Lobés",
+    duration: "7 jours",
+    price: 350000,
+    desc: "De Douala à Kribi en longeant la côte : marchés, chutes et plages avec des acteurs locaux à chaque étape.",
+    image: "/images/chutes-lobe/Chutes de la Lobé 3.jpg",
+    location: "Kribi",
+    lat: 2.9395,
+    lng: 9.9104,
+    category: "Détente",
+    agencyId: "ag1",
+    guideIds: ["g6", "g10"],
+    hotelPartnerIds: ["par1"],
+    transportPartnerIds: ["par3"],
+    agencyMargin: 350000,
+    images: ["/images/chutes-lobe/Chutes de la Lobé 2.jpg", "/images/plages/grand-batanga/grand-batanga-1.jpg"],
+    sites: [
+      {
+        id: "c1s1",
+        name: "Marchés de Douala",
+        city: "Douala",
+        desc: "Découverte du port et des marchés avec un guide de la ville.",
+        image: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=400&q=80",
+        lat: 4.0515,
+        lng: 9.7679,
+        guideIds: ["g6"],
+        transportPartnerIds: ["par3"],
+        hotelName: "Hôtel Douala Centre",
+      },
+      {
+        id: "c1s2",
+        name: "Chutes de la Lobé",
+        city: "Kribi",
+        desc: "Cascades tombant directement dans l'océan, accompagnées par un guide local.",
+        image: "/images/chutes-lobe/Chutes de la Lobé 2.jpg",
+        lat: 2.9374,
+        lng: 9.9089,
+        guideIds: ["g6"],
+        hotelPartnerIds: ["par1"],
+      },
+      {
+        id: "c1s3",
+        name: "Plage de Grand Batanga",
+        city: "Kribi",
+        desc: "Plage de sable doré et village de pêcheurs, avec hébergement partenaire.",
+        image: "/images/plages/grand-batanga/grand-batanga-1.jpg",
+        lat: 2.929,
+        lng: 9.891,
+        guideIds: ["g10"],
+        hotelPartnerIds: ["par1"],
+      },
+    ],
+  },
+  {
+    id: "c2",
+    type: "circuit",
+    name: "Le Souffle des Volcans",
+    duration: "5 jours",
+    price: 280000,
+    desc: "Buea, Limbé et le Mont Cameroun : plusieurs sites dans chaque ville, encadrés par des guides et hébergements partenaires.",
+    image: "/images/mont-cameroun/mont cameroun1.jpg",
+    location: "Buea",
+    lat: 4.1581,
+    lng: 9.2625,
+    category: "Aventure",
+    agencyId: "ag2",
+    guideIds: ["g11", "g12"],
+    hotelPartnerIds: ["par5"],
+    agencyMargin: 280000,
+    images: ["/images/mont-cameroun/mont cameroun.jpg", "/images/plages/down-beach/down-beach.jpg"],
+    sites: [
+      {
+        id: "c2s1",
+        name: "Mont Cameroun",
+        city: "Buea",
+        desc: "Ascension du toit de l'Afrique de l'Ouest avec un guide certifié.",
+        image: "/images/mont-cameroun/mont cameroun.jpg",
+        lat: 4.1581,
+        lng: 9.2625,
+        guideIds: ["g11"],
+        hotelPartnerIds: ["par5"],
+      },
+      {
+        id: "c2s2",
+        name: "Jardin botanique de Buea",
+        city: "Buea",
+        desc: "Balade botanique et point de vue sur la ville, avec le même guide de montagne.",
+        image: "/images/mont-cameroun/mont cameroun2.jpg",
+        lat: 4.149,
+        lng: 9.254,
+        guideIds: ["g12"],
+        hotelPartnerIds: ["par5"],
+      },
+      {
+        id: "c2s3",
+        name: "Down Beach Limbé",
+        city: "Limbé",
+        desc: "Plage de sable noir et retour des pêcheurs, guidée par un acteur de la côte.",
+        image: "/images/plages/down-beach/down-beach.jpg",
+        lat: 4.015,
+        lng: 9.208,
+        guideIds: ["g12"],
+      },
+      {
+        id: "c2s4",
+        name: "Mile 6 Beach",
+        city: "Limbé",
+        desc: "Sable volcanique et falaises verdoyantes, deuxième site de la même ville.",
+        image: "/images/plages/mile-6/mile-6.jpg",
+        lat: 4.02,
+        lng: 9.2,
+        guideIds: ["g12"],
+      },
+    ],
+  },
+  {
+    id: "c3",
+    type: "circuit",
+    name: "L'Or des Sultans",
+    duration: "8 jours",
+    price: 420000,
+    desc: "Palais, musées et chefferies : deux sites culturels à Foumban et une escale à Douala.",
+    image: "/images/palais-bamoun/Palais des sultans Bamoun1.jpg",
+    location: "Foumban",
+    lat: 5.7266,
+    lng: 10.8994,
+    category: "Culturel",
+    agencyId: "ag1",
+    guideIds: ["g6", "g9"],
+    hotelPartnerIds: ["par2"],
+    transportPartnerIds: ["par3"],
+    agencyMargin: 420000,
+    images: ["/images/palais-bamoun/Palais des sultans Bamoun3.jpg", "/images/palais-bamoun/Palais des sultans Bamoun2.jpg"],
+    sites: [
+      {
+        id: "c3s1",
+        name: "Palais des sultans Bamoun",
+        city: "Foumban",
+        desc: "Architecture royale et collections sacrées, avec un guide culturel.",
+        image: "/images/palais-bamoun/Palais des sultans Bamoun3.jpg",
+        lat: 5.728,
+        lng: 10.898,
+        guideIds: ["g6"],
+        hotelPartnerIds: ["par2"],
+      },
+      {
+        id: "c3s2",
+        name: "Musée des arts Bamoun",
+        city: "Foumban",
+        desc: "Sculptures, bronzes et attributs royaux dans la même ville que le palais.",
+        image: "/images/palais-bamoun/Palais des sultans Bamoun2.jpg",
+        lat: 5.727,
+        lng: 10.897,
+        guideIds: ["g6"],
+        hotelPartnerIds: ["par2"],
+      },
+      {
+        id: "c3s3",
+        name: "Centre culturel de Douala",
+        city: "Douala",
+        desc: "Escal artistique avant de rejoindre l'Ouest, avec transport partenaire.",
+        image: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=400&q=80",
+        lat: 4.0515,
+        lng: 9.7679,
+        guideIds: ["g9"],
+        transportPartnerIds: ["par3"],
+        hotelName: "Hôtel Douala Centre",
+      },
+    ],
+  },
+  {
+    id: "c4",
+    type: "circuit",
+    name: "La Lune de l'Adamaoua",
+    duration: "6 jours",
+    price: 310000,
+    desc: "Deux sites à Ngaoundéré puis le grand nord sauvage, avec guides locaux à chaque étape.",
+    image: "/images/parc-waza/Parc National de Waza 4.jpg",
+    location: "Ngaoundéré",
+    lat: 7.3167,
+    lng: 13.5833,
+    category: "Aventure",
+    agencyId: "ag2",
+    guideIds: ["g12", "g13"],
+    agencyMargin: 310000,
+    images: ["/images/parc-waza/Parc National de Waza 3.jpg", "/images/roumsiki/Roumsiki 2.jpg"],
+    sites: [
+      {
+        id: "c4s1",
+        name: "Palais du Lamibé",
+        city: "Ngaoundéré",
+        desc: "Chefferie traditionnelle et architecture du plateau de l'Adamaoua.",
+        image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=80",
+        lat: 7.3167,
+        lng: 13.5833,
+        guideIds: ["g12"],
+        hotelName: "Hôtel Adamaoua Résidence",
+      },
+      {
+        id: "c4s2",
+        name: "Lac Tison",
+        city: "Ngaoundéré",
+        desc: "Lac naturel et village de pêcheurs, deuxième site de la même ville.",
+        image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=80",
+        lat: 7.3,
+        lng: 13.57,
+        guideIds: ["g13"],
+        hotelName: "Hôtel Adamaoua Résidence",
+      },
+      {
+        id: "c4s3",
+        name: "Parc national de Waza",
+        city: "Maroua",
+        desc: "Safari dans la savane du grand Nord avec un guide de la réserve.",
+        image: "/images/parc-waza/Parc National de Waza 3.jpg",
+        lat: 11.4,
+        lng: 14.6,
+        guideIds: ["g13"],
+        hotelName: "Le Campement de Waza",
+      },
+    ],
+  },
 ];
+
+export function getAllCircuits(): Circuit[] {
+  return CIRCUITS;
+}
+
+export function getCircuitById(id: string): Circuit | undefined {
+  return CIRCUITS.find((c) => c.id === id);
+}
 
 // --- Destinations ---
 export const DESTINATIONS = [
@@ -405,7 +677,29 @@ export interface ReservationData {
   guideIds?: string[]; // tous les guides sélectionnés lors de la personnalisation
   guideName?: string;
   agencyId?: string; // agence propriétaire de l'offre réservée
+  cityDetails?: ReservationCityDetail[];
 }
+
+export type ReservationSiteGuide = {
+  site: string;
+  guideId: string;
+  guideName: string;
+  days: number;
+  guidePrice: number;
+};
+
+export type ReservationCityDetail = {
+  city: string;
+  hotelName?: string;
+  hotelPrice?: number;
+  transportLabel?: string;
+  transportPrice?: number;
+  transportAgency?: string;
+  guideIds?: string[];
+  guideNames?: string[];
+  guidePrice?: number;
+  siteGuides?: ReservationSiteGuide[];
+};
 
 export const RESERVATIONS: ReservationData[] = [
   { ref: "DT-2026-001", packId: "p8", packName: "Chutes de la Lobé", dates: "10–13 juin 2026", status: "Confirmée", userId: "usr_001", participants: 2, days: 4, totalPrice: 240000, createdAt: "2026-05-20" },
@@ -785,7 +1079,7 @@ export const PENDING_OFFERS = [
 // Données persistées dans data/custom-offers.json via /api/custom-offers.
 // Cache local synchronisé avec l'API.
 
-let _offlineOffers: typeof PACKS[0][] | null = null;
+let _offlineOffers: PackItem[] | null = null;
 let _hiddenIds: string[] = [];
 let _dataListeners: (() => void)[] = [];
 
@@ -812,8 +1106,8 @@ export async function loadCustomOffers(): Promise<void> {
   }
 }
 
-export function getAllPacks() {
-  return [...(_offlineOffers ?? []), ...PACKS];
+export function getAllPacks(): PackItem[] {
+  return [...(_offlineOffers ?? []), ...CIRCUITS, ...PACKS];
 }
 
 function isAgencyAccountActiveById(agencyId?: string): boolean {
@@ -983,7 +1277,7 @@ export async function setReservationStatus(res: ReservationData, status: Reserva
     await fetch("/api/reservations", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated),
+      body: JSON.stringify({ ref: res.ref, status }),
     });
   } catch { /* ignore */ }
 }

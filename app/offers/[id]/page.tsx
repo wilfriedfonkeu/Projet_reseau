@@ -8,12 +8,78 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { Textarea } from "@/src/components/ui/textarea";
-import { getPublicPacks, AGENCIES, HOTELS_NEARBY, FLEET, getReviewsByPack, pushReview, loadSavedReviews, getReservationsByUser, loadGuides, getGuidesByIds, loadTrips, getAllTrips, type GuideData } from "@/src/lib/njangui-data";
+import { getPublicPacks, AGENCIES, HOTELS_NEARBY, FLEET, getReviewsByPack, pushReview, loadSavedReviews, getReservationsByUser, loadGuides, getGuidesByIds, loadTrips, getAllTrips, loadPartners, getAllPartners, type GuideData, type PartnerData, type CircuitSite } from "@/src/lib/njangui-data";
 import { useOffersLoader } from "@/src/hooks/use-offers-loader";
 import { getCurrentUser } from "@/src/lib/auth-store";
-import { MapPin, Clock, CalendarDays, Star, Shield, ArrowRight, Bus, Hotel, CheckCircle2, ExternalLink } from "lucide-react";
+import { MapPin, Clock, CalendarDays, Star, Shield, ArrowRight, Bus, Hotel, CheckCircle2, ExternalLink, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/src/lib/lang";
+
+type GalleryItem = { image: string; label: string; city: string };
+
+function normalizeCity(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function SiteImageCarousel({ items, previousLabel, nextLabel }: { items: GalleryItem[]; previousLabel: string; nextLabel: string }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (items.length <= 1) return;
+    const timer = window.setTimeout(() => {
+      setIndex((current) => (current + 1) % items.length);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [index, items.length]);
+
+  if (items.length === 0) return null;
+  const current = items[index] ?? items[0];
+
+  return (
+    <div className="rounded-2xl overflow-hidden border bg-card">
+      <div className="relative aspect-[16/9] sm:aspect-[21/9]">
+        <img src={current.image} alt={current.label} className="w-full h-full object-cover" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-4 py-5">
+          <p className="font-bold text-white drop-shadow">{current.label}</p>
+          <p className="text-sm text-white/80 flex items-center gap-1"><MapPin size={12} /> {current.city}</p>
+        </div>
+        {items.length > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label={previousLabel}
+              title={previousLabel}
+              onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition hover:bg-black/70"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              aria-label={nextLabel}
+              title={nextLabel}
+              onClick={() => setIndex((i) => (i + 1) % items.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition hover:bg-black/70"
+            >
+              <ChevronRight size={18} />
+            </button>
+            <div className="absolute bottom-3 right-4 flex gap-1.5">
+              {items.map((item, i) => (
+                <button
+                  key={`${item.image}-${i}`}
+                  type="button"
+                  aria-label={`${i + 1}`}
+                  onClick={() => setIndex(i)}
+                  className={`h-2 rounded-full transition-all ${i === index ? "w-6 bg-white" : "w-2 bg-white/60 hover:bg-white"}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function OfferDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   useOffersLoader();
@@ -28,6 +94,7 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
   const [canReview, setCanReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [guides, setGuides] = useState<GuideData[]>([]);
+  const [partners, setPartners] = useState<PartnerData[]>(getAllPartners());
 
   useEffect(() => {
     loadSavedReviews().then(() => {
@@ -41,6 +108,7 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
       setCanReview(hasConfirmed);
     }
     loadTrips();
+    loadPartners().then(() => setPartners(getAllPartners()));
     loadGuides().then(() => {
       if ((pack as any)?.guideIds?.length) {
         setGuides(getGuidesByIds((pack as any).guideIds));
@@ -65,6 +133,54 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
   }
 
   const agency = AGENCIES.find((a) => a.id === pack.agencyId);
+  const circuitSites = pack.sites ?? [];
+  const sitesByCity = circuitSites.reduce<Record<string, CircuitSite[]>>((acc, site) => {
+    if (!acc[site.city]) acc[site.city] = [];
+    acc[site.city].push(site);
+    return acc;
+  }, {});
+  const addGalleryItem = (list: GalleryItem[], item?: GalleryItem) => {
+    if (!item?.image) return;
+    if (!list.some(existing => existing.image === item.image && existing.label === item.label)) list.push(item);
+  };
+  const hotelByName = (name?: string) =>
+    HOTELS_NEARBY.find(hotel => normalizeCity(hotel.name) === normalizeCity(name ?? ""));
+  const hotelByPartnerId = (id?: string) => {
+    const partner = partners.find(item => item.id === id);
+    return partner ? hotelByName(partner.name) : undefined;
+  };
+
+  const galleryItems: GalleryItem[] = [];
+  if (pack.type === "circuit") {
+    circuitSites.forEach(site => {
+      addGalleryItem(galleryItems, site.image ? { image: site.image, label: site.name, city: site.city } : undefined);
+      const hotel = hotelByName(site.hotelName)
+        ?? (site.hotelPartnerIds ?? []).map(hotelByPartnerId).find(Boolean)
+        ?? HOTELS_NEARBY.find(item => normalizeCity(item.city) === normalizeCity(site.city));
+      addGalleryItem(galleryItems, hotel?.image ? { image: hotel.image, label: hotel.name, city: site.city } : undefined);
+    });
+    (pack.images ?? []).forEach(image => addGalleryItem(galleryItems, { image, label: pack.name, city: pack.location }));
+  } else {
+    addGalleryItem(galleryItems, { image: pack.image, label: pack.name, city: pack.location });
+    (pack.images ?? []).forEach(image => addGalleryItem(galleryItems, { image, label: pack.name, city: pack.location }));
+    const hotel = HOTELS_NEARBY.find(item => item.id === pack.hotelId)
+      ?? hotelByPartnerId(pack.hotelPartnerId)
+      ?? (pack.hotelPartnerIds ?? []).map(hotelByPartnerId).find(Boolean)
+      ?? HOTELS_NEARBY.find(item => normalizeCity(item.city) === normalizeCity(pack.location));
+    addGalleryItem(galleryItems, hotel?.image ? { image: hotel.image, label: hotel.name, city: hotel.city } : undefined);
+  }
+  if (galleryItems.length === 0) addGalleryItem(galleryItems, { image: pack.image, label: pack.name, city: pack.location });
+
+  const guideNamesById = (ids?: string[]) =>
+    (ids ?? [])
+      .map((id) => guides.find((g) => g.id === id)?.name)
+      .filter((name): name is string => Boolean(name))
+      .join(", ");
+  const partnerNamesById = (ids?: string[]) =>
+    (ids ?? [])
+      .map((id) => partners.find((p) => p.id === id)?.name)
+      .filter((name): name is string => Boolean(name))
+      .join(", ");
 
   return (
     <div style={{ fontFamily: "Nunito, sans-serif" }} className="bg-background min-h-screen flex flex-col">
@@ -75,9 +191,12 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
           
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            <div className="rounded-2xl overflow-hidden aspect-[16/9] shadow-lg">
-              <img src={pack.image} alt={pack.name} className="w-full h-full object-cover" />
-            </div>
+            <SiteImageCarousel
+              key={pack.id}
+              items={galleryItems}
+              previousLabel={t("previous_image")}
+              nextLabel={t("next_image")}
+            />
 
             <div>
               <div className="flex flex-wrap gap-2 mb-3">
@@ -92,8 +211,154 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
               </p>
             </div>
 
+            {circuitSites.length > 0 && (
+              <div>
+                <h3 className="text-xl font-bold mb-2 text-foreground">{t("circuit_itinerary")}</h3>
+                <p className="text-sm text-muted-foreground mb-5">{t("circuit_itinerary_desc")}</p>
+                <div className="space-y-5">
+                  {Object.entries(sitesByCity).map(([city, sites]) => {
+                    const cityGuides = guideNamesById(Array.from(new Set(sites.flatMap((s) => s.guideIds ?? []))));
+                    const cityHotels = partnerNamesById(Array.from(new Set(sites.flatMap((s) => s.hotelPartnerIds ?? []))));
+                    const cityTransport = partnerNamesById(Array.from(new Set(sites.flatMap((s) => s.transportPartnerIds ?? []))));
+                    const cityKey = normalizeCity(city);
+                    const cityTrips = getAllTrips().filter(
+                      (trip) => normalizeCity(trip.to) === cityKey || normalizeCity(trip.from) === cityKey
+                    );
+                    const cityGuideList = Array.from(new Set(sites.flatMap((s) => s.guideIds ?? [])))
+                      .map((id) => guides.find((g) => g.id === id))
+                      .filter((g): g is GuideData => Boolean(g));
+                    const cityHotelIds = Array.from(new Set(sites.flatMap((s) => s.hotelPartnerIds ?? [])));
+                    const cityPartnerHotels = cityHotelIds
+                      .map((id) => partners.find((p) => p.id === id))
+                      .filter((p): p is PartnerData => Boolean(p));
+                    const cityNearbyHotels = HOTELS_NEARBY.filter(
+                      (h) => normalizeCity(h.city) === cityKey &&
+                        !cityPartnerHotels.some((p) => normalizeCity(p.name) === normalizeCity(h.name))
+                    );
+                    const citySiteHotels = Array.from(new Set(sites.map((s) => s.hotelName).filter((n): n is string => Boolean(n))))
+                      .filter((name) =>
+                        !cityPartnerHotels.some((p) => normalizeCity(p.name) === normalizeCity(name)) &&
+                        !cityNearbyHotels.some((h) => normalizeCity(h.name) === normalizeCity(name))
+                      );
+                    return (
+                      <div key={city} className="rounded-2xl border bg-card p-5">
+                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                          <MapPin size={16} className="text-[#EA580C]" />
+                          <h4 className="font-bold text-foreground">{city}</h4>
+                          <Badge variant="outline" className="text-xs">
+                            {sites.length} {t("circuit_sites_count")}
+                          </Badge>
+                          {cityGuides && <Badge variant="secondary" className="text-xs">{t("circuit_guide")} : {cityGuides}</Badge>}
+                          {cityHotels && <Badge variant="secondary" className="text-xs">{t("circuit_hotel")} : {cityHotels}</Badge>}
+                          {cityTransport && <Badge variant="secondary" className="text-xs">{t("circuit_transport")} : {cityTransport}</Badge>}
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 mb-5">
+                          <div className="rounded-xl border bg-muted/30 p-3">
+                            <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wide text-[#EA580C]">
+                              <Bus size={14} /> {t("circuit_transport_available")}
+                            </div>
+                            {cityTrips.length > 0 ? (
+                              <div className="space-y-2">
+                                {cityTrips.slice(0, 4).map((trip, i) => (
+                                  <div key={`${trip.from}-${trip.to}-${trip.time}-${i}`} className="flex items-center justify-between gap-2 rounded-lg bg-card p-2">
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold truncate">
+                                        {trip.from} <ArrowRight size={11} className="inline text-[#EA580C]" /> {trip.to}
+                                      </p>
+                                      <p className="text-[11px] text-muted-foreground truncate">{trip.time} · {trip.company}</p>
+                                    </div>
+                                    <span className="text-xs font-bold text-[#EA580C] whitespace-nowrap">
+                                      {trip.price.toLocaleString()} {t("fcfa")}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">{t("circuit_no_transport")}</p>
+                            )}
+                          </div>
+                          <div className="rounded-xl border bg-muted/30 p-3">
+                            <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wide text-[#EA580C]">
+                              <Users size={14} /> {t("circuit_guides_available")}
+                            </div>
+                            {cityGuideList.length > 0 ? (
+                              <div className="space-y-2">
+                                {cityGuideList.map((g) => (
+                                  <div key={g.id} className="flex items-center gap-2 rounded-lg bg-card p-2">
+                                    <img src={g.image} alt={g.name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold truncate">{g.name}</p>
+                                      <p className="text-[11px] text-muted-foreground truncate">{g.specialty}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">{t("circuit_no_guide")}</p>
+                            )}
+                          </div>
+                          <div className="rounded-xl border bg-muted/30 p-3">
+                            <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wide text-[#EA580C]">
+                              <Hotel size={14} /> {t("circuit_accommodation_available")}
+                            </div>
+                            {citySiteHotels.length > 0 || cityPartnerHotels.length > 0 || cityNearbyHotels.length > 0 ? (
+                              <div className="space-y-2">
+                                {citySiteHotels.map((name) => (
+                                  <div key={name} className="rounded-lg bg-card p-2">
+                                    <p className="text-xs font-bold truncate">{name}</p>
+                                  </div>
+                                ))}
+                                {cityPartnerHotels.map((p) => (
+                                  <div key={p.id} className="rounded-lg bg-card p-2">
+                                    <p className="text-xs font-bold truncate">{p.name}</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {p.contract?.roomType || t("circuit_hotel")}
+                                      {p.contract?.roomPrice ? ` · ${p.contract.roomPrice.toLocaleString()} ${t("fcfa")}` : ""}
+                                    </p>
+                                  </div>
+                                ))}
+                                {cityNearbyHotels.slice(0, 2).map((h) => (
+                                  <div key={h.id} className="rounded-lg bg-card p-2">
+                                    <p className="text-xs font-bold truncate">{h.name}</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {h.pricePerNight.toLocaleString()} {t("fcfa")} · {h.rating}{" "}
+                                      <Star size={10} className="inline fill-amber-400 text-amber-400" />
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">{t("circuit_no_accommodation")}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          {sites.map((site) => {
+                            const guidesHere = guideNamesById(site.guideIds);
+                            const hotelsHere = partnerNamesById(site.hotelPartnerIds);
+                            const transportHere = partnerNamesById(site.transportPartnerIds);
+                            return (
+                              <div key={site.id} className="rounded-xl border bg-muted/20 p-3">
+                                <h5 className="font-bold text-foreground">{site.name}</h5>
+                                <p className="text-sm text-muted-foreground mt-1">{site.desc}</p>
+                                <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                                  {guidesHere && <Badge variant="outline" className="text-xs">{t("circuit_guide")} : {guidesHere}</Badge>}
+                                  {hotelsHere && <Badge variant="outline" className="text-xs">{t("circuit_hotel")} : {hotelsHere}</Badge>}
+                                  {transportHere && <Badge variant="outline" className="text-xs">{t("circuit_transport")} : {transportHere}</Badge>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Hôtel choisi et hébergements à proximité */}
-            {((pack as any).location || (pack as any).hotelId) && (() => {
+            {pack.type !== "circuit" && ((pack as any).location || (pack as any).hotelId) && (() => {
               const chosenHotel = (pack as any).hotelId ? HOTELS_NEARBY.find(h => h.id === (pack as any).hotelId) : null;
               const loc = (pack as any).location || chosenHotel?.city || "";
               const nearbyHotels = loc ? HOTELS_NEARBY.filter(h => h.city.toLowerCase() === loc.toLowerCase() && h.id !== chosenHotel?.id) : [];
@@ -148,7 +413,7 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
             })()}
 
             {/* Transport disponible */}
-            {((pack as any).location) && (() => {
+            {pack.type !== "circuit" && (pack as any).location && (() => {
               const tripsHere = getAllTrips().filter(trip => trip.to.toLowerCase() === (pack as any).location.toLowerCase());
               if (tripsHere.length === 0) return null;
               return (
@@ -183,7 +448,7 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
             })()}
 
             {/* Guides touristiques */}
-            {guides.length > 0 && (
+            {pack.type !== "circuit" && guides.length > 0 && (
               <div>
                 <h3 className="text-xl font-bold mb-4 text-foreground">{t("your_guides")}</h3>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -318,7 +583,7 @@ export default function OfferDetailsPage({ params }: { params: Promise<{ id: str
                   className="w-full bg-[#EA580C] hover:bg-[#C2410C] py-6 text-lg font-bold"
                   onClick={() => router.push(`/reservation/${pack.id}`)}
                 >
-                  {t("reserve_pack")}
+                  {pack.type === "circuit" ? t("reserve_circuit") : t("reserve_pack")}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground mt-3">
                   {t("no_charge_now")}

@@ -17,6 +17,8 @@ import { useAuth } from "@/src/lib/auth-context";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useLang } from "@/src/lib/lang";
+import { downloadTicketPdf, downloadInvoicePdf } from "@/src/lib/pdf-documents";
+import { getStayPhase, type StayPhase } from "@/src/lib/stay-dates";
 import Link from "next/link";
 
 const itemDefs = [
@@ -40,6 +42,26 @@ function statusColor(s: string) {
   }[s] ?? "";
 }
 
+function stayPhaseKey(phase: StayPhase) {
+  return {
+    upcoming: "stay_upcoming",
+    ongoing: "stay_ongoing",
+    finished: "stay_finished",
+    cancelled: "stay_cancelled",
+    unknown: "stay_unknown",
+  }[phase];
+}
+
+function stayPhaseColor(phase: StayPhase) {
+  return {
+    upcoming: "bg-blue-100 text-blue-700",
+    ongoing: "bg-green-100 text-green-700",
+    finished: "bg-muted text-muted-foreground",
+    cancelled: "bg-red-100 text-red-700",
+    unknown: "bg-muted text-muted-foreground",
+  }[phase];
+}
+
 export default function TouristDashboard() {
   const [active, setActive] = useState("home");
   const { user, updateProfile } = useAuth();
@@ -58,11 +80,9 @@ export default function TouristDashboard() {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState(5000);
   const [depositMethod, setDepositMethod] = useState<"carte_bancaire" | "orange_money" | "mobile_money">("orange_money");
-  const [showAgencyUpgrade, setShowAgencyUpgrade] = useState(false);
-  const [agencyName, setAgencyName] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const router = useRouter();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const items = itemDefs.map((d) => ({ ...d, label: t(d.labelKey) }));
 
   const activeReservations = myReservations.filter(r => r.status === "Confirmée" || r.status === "En attente");
@@ -73,6 +93,24 @@ export default function TouristDashboard() {
   const nextReservation = activeReservations[0] ?? null;
   const recentReservations = [...myReservations].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
   const packForReservation = (res: typeof myReservations[0]) => getAllPacks().find(p => p.id === res.packId);
+
+  const handleDownloadTicket = async (res: ReservationData) => {
+    try {
+      await downloadTicketPdf(res, user, lang, packForReservation(res)?.location);
+      toast.success(t("ticket_downloaded"));
+    } catch {
+      toast.error(t("pdf_error"));
+    }
+  };
+
+  const handleDownloadInvoice = async (res: ReservationData) => {
+    try {
+      await downloadInvoicePdf(res, user, lang);
+      toast.success(`${t("invoice_downloaded")} ${res.ref}`);
+    } catch {
+      toast.error(t("pdf_error"));
+    }
+  };
 
   useEffect(() => {
     if (!user || user.role !== "tourist") {
@@ -198,7 +236,7 @@ export default function TouristDashboard() {
                   <p className="text-sm text-muted-foreground">{t("upgrade_agency_desc")}</p>
                 </div>
               </div>
-              <Button className="bg-[#EA580C] hover:bg-[#C2410C] shrink-0" onClick={() => setActive("profile")}>
+              <Button className="bg-[#EA580C] hover:bg-[#C2410C] shrink-0" onClick={() => router.push("/auth?tab=signup&role=agency")}>
                 {t("upgrade_agency_cta")}
               </Button>
             </CardContent>
@@ -220,37 +258,43 @@ export default function TouristDashboard() {
                   <TableHead>{t("table_reference")}</TableHead>
                   <TableHead>{t("table_destination")}</TableHead>
                   <TableHead>{t("table_dates")}</TableHead>
+                  <TableHead>{t("table_stay_progress")}</TableHead>
                   <TableHead className="text-right">{t("table_amount")}</TableHead>
                   <TableHead>{t("table_status")}</TableHead>
                   <TableHead className="text-right">{t("table_actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                  {myReservations.map((r) => (
-                  <TableRow key={r.ref}>
-                    <TableCell className="font-mono text-xs">{r.ref}</TableCell>
-                    <TableCell className="font-semibold">
-                        {r.packName}
-                        <div className="text-xs text-muted-foreground font-normal mt-0.5">
-                          {r.hotelName && <><span>{r.hotelName}</span>{(() => { const h = HOTELS_NEARBY.find(hx => r.hotelName && hx.name.toLowerCase() === r.hotelName.toLowerCase()); return h ? <Link href={`/hotel/${h.id}`} className="inline ml-0.5"><ExternalLink size={10} className="text-muted-foreground hover:text-[#EA580C]" /></Link> : null; })()}</>}
-                          {r.hotelName && r.transportAgency && <span> • </span>}
-                          {r.transportAgency && <span>{r.transportAgency}</span>}
-                          {!r.transportAgency && r.transportLabel && <span>{r.transportLabel}</span>}
-                        </div>
-                      </TableCell>
-                    <TableCell>{r.dates}</TableCell>
-                    <TableCell className="text-right font-bold">{r.totalPrice.toLocaleString()} {t("fcfa")}</TableCell>
-                    <TableCell><Badge className={statusColor(r.status)}>{r.status}</Badge></TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button size="sm" variant="ghost" onClick={() => setDetailReservation(r)}>
-                        {t("details_btn")}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => toast.success(t("ticket_downloaded"))}>
-                        <Download size={14} className="mr-1" /> {t("ticket_btn")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                  {myReservations.map((r) => {
+                    const phase = getStayPhase(r);
+                    return (
+                      <TableRow key={r.ref}>
+                        <TableCell className="font-mono text-xs">{r.ref}</TableCell>
+                        <TableCell className="font-semibold">
+                          {r.packName}
+                          <div className="text-xs text-muted-foreground font-normal mt-0.5">
+                            {r.hotelName && <><span>{r.hotelName}</span>{(() => { const h = HOTELS_NEARBY.find(hx => r.hotelName && hx.name.toLowerCase() === r.hotelName.toLowerCase()); return h ? <Link href={`/hotel/${h.id}`} className="inline ml-0.5"><ExternalLink size={10} className="text-muted-foreground hover:text-[#EA580C]" /></Link> : null; })()}</>}
+                            {r.hotelName && r.transportAgency && <span> • </span>}
+                            {r.transportAgency && <span>{r.transportAgency}</span>}
+                            {!r.transportAgency && r.transportLabel && <span>{r.transportLabel}</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell>{r.dates}</TableCell>
+                        <TableCell><Badge className={stayPhaseColor(phase)}>{t(stayPhaseKey(phase))}</Badge></TableCell>
+                        <TableCell className="text-right font-bold">{r.totalPrice.toLocaleString()} {t("fcfa")}</TableCell>
+                        <TableCell><Badge className={statusColor(r.status)}>{r.status}</Badge></TableCell>
+                        <TableCell className="text-right space-x-1">
+                          <Button size="sm" variant="ghost" onClick={() => setDetailReservation(r)}>
+                            {t("details_btn")}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDownloadTicket(r)}>
+                            <Download size={14} className="mr-1" /> {t("ticket_btn")}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+
               </TableBody>
             </Table>
           </CardContent>
@@ -307,7 +351,7 @@ export default function TouristDashboard() {
                       <TableCell className="font-bold">{r.totalPrice.toLocaleString()} {t("fcfa")}</TableCell>
                       <TableCell><Badge className={statusColor(r.status)}>{r.status}</Badge></TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => toast.success(`${t("invoice_downloaded")} ${r.ref}`)}>
+                        <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(r)}>
                           <Download size={14} className="mr-1" /> {t("pdf_btn")}
                         </Button>
                       </TableCell>
@@ -633,33 +677,9 @@ export default function TouristDashboard() {
                 <p className="text-sm text-muted-foreground">{t("upgrade_agency_desc")}</p>
               </div>
             </div>
-            {!showAgencyUpgrade ? (
-              <Button variant="outline" onClick={() => setShowAgencyUpgrade(true)}>
-                {t("upgrade_agency_cta")}
-              </Button>
-            ) : (
-              <div className="space-y-3 border-t pt-4">
-                <div>
-                  <Label>{t("upgrade_agency_name_label")}</Label>
-                  <Input value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder={t("upgrade_agency_name_placeholder")} />
-                </div>
-                <div className="flex gap-3">
-                  <Button className="bg-[#EA580C] hover:bg-[#C2410C]" onClick={() => {
-                    if (!agencyName.trim()) { toast.error(t("fill_all_fields_error")); return; }
-                    const updated = updateProfile({ role: "agency", companyName: agencyName.trim(), plan: "monthly", verified: true });
-                    if (updated) {
-                      toast.success(t("upgrade_agency_success"));
-                      router.push("/dashboard/agency");
-                    }
-                  }}>
-                    {t("upgrade_agency_confirm")}
-                  </Button>
-                  <Button variant="outline" onClick={() => { setShowAgencyUpgrade(false); setAgencyName(""); }}>
-                    {t("cancel_btn")}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <Button className="bg-[#EA580C] hover:bg-[#C2410C]" onClick={() => router.push("/auth?tab=signup&role=agency")}>
+              {t("upgrade_agency_cta")}
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -715,24 +735,9 @@ export default function TouristDashboard() {
                           <Building2 size={16} className="text-[#EA580C]" />
                           <span>{agency.name}</span>
                         </div>
-          )}
-          {/* ── UPGRADE TO AGENCY (HOME) ── */}
-          <Card className="border-dashed border-[#EA580C]/40">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Building2 size={24} className="text-[#EA580C]" />
-                <div>
-                  <h3 className="font-bold text-foreground">{t("upgrade_agency_title")}</h3>
-                  <p className="text-sm text-muted-foreground">{t("upgrade_agency_desc")}</p>
-                </div>
-              </div>
-              <Button className="bg-[#EA580C] hover:bg-[#C2410C] shrink-0" onClick={() => setActive("profile")}>
-                {t("upgrade_agency_cta")}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                      )}
+                    </div>
+                  )}
                     {(detailReservation.hotelName || detailReservation.transportAgency || detailReservation.transportLabel) && (
                       <div className="space-y-3">
                         <h3 className="font-bold text-foreground text-sm">{t("extra_services_heading")}</h3>
@@ -768,8 +773,14 @@ export default function TouristDashboard() {
                         </div>
                       </div>
                     )}
-                    <div className="flex gap-3 pt-2">
-                      <Button variant="outline" className="flex-1" onClick={() => setDetailReservation(null)}>{t("modal_close")}</Button>
+                    <div className="flex flex-wrap gap-3 pt-2">
+                      <Button variant="outline" className="flex-1" onClick={() => handleDownloadTicket(detailReservation)}>
+                        <Download size={14} className="mr-1" /> {t("download_ticket_pdf")}
+                      </Button>
+                      <Button variant="outline" className="flex-1" onClick={() => handleDownloadInvoice(detailReservation)}>
+                        <Download size={14} className="mr-1" /> {t("download_invoice_pdf")}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setDetailReservation(null)}>{t("modal_close")}</Button>
                     </div>
                   </div>
                 </CardContent>

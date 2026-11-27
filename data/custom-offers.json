@@ -1,6 +1,7 @@
 {
   "custom": [
     {
+<<<<<<< Updated upstream
       "id": "off_1795172879526",
       "location": "douala",
       "lat": 4.05,
@@ -27,6 +28,23 @@
       "transportPartnerId": "par4",
       "places": 2,
       "agencyMargin": 40000
+=======
+      "id": "off_1792433916094",
+      "location": "Douala",
+      "lat": 4.0511,
+      "lng": 9.7679,
+      "name": "Douala exclusif",
+      "category": "Aventure",
+      "price": 200000,
+      "duration": "5",
+      "desc": "C'est partir pour faire un tour",
+      "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
+      "agencyId": "ag1",
+      "guideIds": [
+        "g9",
+        "g2"
+      ]
+>>>>>>> Stashed changes
     },
     {
       "id": "off_1781703222738",

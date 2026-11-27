@@ -1,205 +1,168 @@
 [
   {
-    "ref": "DT-2026-356",
-    "packId": "off_1795172879526",
-    "packName": "JOIE",
-    "userId": "usr_1795013068012",
-    "dates": "2026-11-20 → 2026-11-22",
+    "ref": "DT-2026-166",
+    "packId": "p4",
+    "packName": "Limbe & Volcan",
+    "userId": "usr_1795533060596",
+    "dates": "2026-11-25 → 2026-11-26",
     "status": "Confirmée",
     "participants": 1,
-    "days": 2,
-    "totalPrice": 174500,
-    "createdAt": "2026-11-20",
+    "days": 1,
+    "totalPrice": 324500,
+    "createdAt": "2026-11-24",
     "hotelName": "L'Hôtel de l'Artisanat",
-    "hotelPrice": 70000,
-    "transportLabel": "Yaoundé → Douala 07h00",
+    "hotelPrice": 35000,
+    "transportLabel": "Douala → Limbe 10h00",
     "transportPrice": 4500,
     "transportAgency": "Trans-Cameroun",
-    "guideId": "g2",
+    "guideId": "g6",
     "guideIds": [
-      "g2"
+      "g6"
     ],
-    "guideName": "Christian Kolo",
-    "agencyId": "ag1"
+    "guideName": "Maelis Ndame",
+    "agencyId": "ag1",
+    "cityDetails": [
+      {
+        "city": "Limbe",
+        "hotelName": "L'Hôtel de l'Artisanat",
+        "hotelPrice": 35000,
+        "transportLabel": "Douala → Limbe 10h00",
+        "transportPrice": 4500,
+        "transportAgency": "Trans-Cameroun",
+        "guideIds": [
+          "g6"
+        ],
+        "guideNames": [
+          "Limbe & Volcan: Maelis Ndame"
+        ],
+        "guidePrice": 25000,
+        "siteGuides": [
+          {
+            "site": "Limbe & Volcan",
+            "guideId": "g6",
+            "guideName": "Maelis Ndame",
+            "days": 1,
+            "guidePrice": 25000
+          }
+        ]
+      }
+    ]
   },
   {
-    "ref": "DT-2026-106",
-    "packId": "off_1795082767909",
-    "packName": "Plaisir ",
-    "userId": "usr_1795013068012",
-    "dates": "2026-11-19 → 2026-11-22",
+    "ref": "DT-2026-481",
+    "packId": "c2",
+    "packName": "Le Souffle des Volcans",
+    "userId": "usr_001",
+    "dates": "2026-11-22 → 2026-11-25",
     "status": "Confirmée",
     "participants": 1,
     "days": 3,
-    "totalPrice": 279500,
-    "createdAt": "2026-11-19",
-    "hotelName": "L'Hôtel Ilomba",
-    "hotelPrice": 165000,
-    "transportLabel": "Douala → Kribi 09h00",
-    "transportPrice": 4500,
-    "transportAgency": "Trans-Cameroun",
-    "guideId": "g2",
+    "totalPrice": 625500,
+    "createdAt": "2026-11-21",
+    "hotelName": "Le Mountain Hotel",
+    "hotelPrice": 210000,
+    "transportLabel": "Douala → Buea 08h30",
+    "transportPrice": 6500,
+    "transportAgency": "Star Voyages",
+    "guideId": "g11",
     "guideIds": [
-      "g2"
+      "g11",
+      "g12",
+      "g12",
+      "g12"
     ],
-    "guideName": "Christian Kolo",
-    "agencyId": "ag1"
+    "guideName": "Pierre Ekwé, Estelle Manga, Estelle Manga, Estelle Manga",
+    "agencyId": "ag2",
+    "cityDetails": [
+      {
+        "city": "Buea",
+        "hotelName": "Le Mountain Hotel",
+        "hotelPrice": 100000,
+        "transportLabel": "Douala → Buea 08h30",
+        "transportPrice": 3500,
+        "transportAgency": "Star Voyages",
+        "guideIds": [
+          "g11",
+          "g12"
+        ],
+        "guideNames": [
+          "Mont Cameroun: Pierre Ekwé",
+          "Jardin botanique de Buea: Estelle Manga"
+        ],
+        "guidePrice": 73000,
+        "siteGuides": [
+          {
+            "site": "Mont Cameroun",
+            "guideId": "g11",
+            "guideName": "Pierre Ekwé",
+            "days": 1,
+            "guidePrice": 45000
+          },
+          {
+            "site": "Jardin botanique de Buea",
+            "guideId": "g12",
+            "guideName": "Estelle Manga",
+            "days": 1,
+            "guidePrice": 28000
+          }
+        ]
+      },
+      {
+        "city": "Limbé",
+        "hotelName": "Le Marcsons Hotels and Resorts",
+        "hotelPrice": 110000,
+        "transportLabel": "Douala → Limbe 08h00",
+        "transportPrice": 3000,
+        "transportAgency": "Star Voyages",
+        "guideIds": [
+          "g12",
+          "g12"
+        ],
+        "guideNames": [
+          "Down Beach Limbé: Estelle Manga",
+          "Mile 6 Beach: Estelle Manga"
+        ],
+        "guidePrice": 56000,
+        "siteGuides": [
+          {
+            "site": "Down Beach Limbé",
+            "guideId": "g12",
+            "guideName": "Estelle Manga",
+            "days": 1,
+            "guidePrice": 28000
+          },
+          {
+            "site": "Mile 6 Beach",
+            "guideId": "g12",
+            "guideName": "Estelle Manga",
+            "days": 1,
+            "guidePrice": 28000
+          }
+        ]
+      }
+    ]
   },
   {
-    "ref": "DT-2026-739",
-    "packId": "off_1795082767909",
-    "packName": "Plaisir ",
-    "userId": "usr_1795013068012",
-    "dates": "2026-11-19 → 2026-11-22",
+    "ref": "DT-2026-818",
+    "packId": "p4",
+    "packName": "Limbe & Volcan",
+    "userId": "usr_001",
+    "dates": "2026-11-29 → 2026-11-27",
     "status": "Confirmée",
-    "participants": 2,
-    "days": 3,
-    "totalPrice": 1670000,
-    "createdAt": "2026-11-19",
-    "transportLabel": "Douala → Kribi 07h00",
-    "transportPrice": 20000,
+    "participants": 12,
+    "days": 1,
+    "totalPrice": 380000,
+    "createdAt": "2026-11-21",
+    "hotelName": "L'Hôtel de l'Artisanat",
+    "hotelPrice": 35000,
+    "transportLabel": "Douala → Limbe 08h00",
+    "transportPrice": 60000,
     "transportAgency": "Star Voyages",
     "guideId": "g1",
+    "guideIds": [
+      "g1"
+    ],
     "guideName": "Alphonse Obama",
     "agencyId": "ag1"
-  },
-  {
-    "ref": "DT-2026-992",
-    "packId": "p2",
-    "packName": "Mont Cameroun Trek",
-    "userId": "usr_020",
-    "dates": "2026-11-03 → 2026-11-29",
-    "status": "Confirmée",
-    "participants": 27,
-    "days": 26,
-    "totalPrice": 252909000,
-    "createdAt": "2026-11-19",
-    "hotelName": "Le Relais des Crandell",
-    "hotelPrice": 28080000,
-    "transportLabel": "Douala → Buea 08h30",
-    "transportPrice": 189000,
-    "transportAgency": "Star Voyages"
-  },
-  {
-    "ref": "DT-2026-014",
-    "packId": "off_1781703222738",
-    "packName": "PLAGE DU GRAND BATANGA",
-    "userId": "usr_1781774498570",
-    "dates": "2026-06-28",
-    "status": "Confirmée",
-    "participants": 2,
-    "days": 4,
-    "totalPrice": 1676000,
-    "createdAt": "2026-06-18",
-    "hotelName": "L'Hôtel Ilomba",
-    "hotelPrice": 440000,
-    "transportLabel": "Douala → Kribi 07h00",
-    "transportPrice": 20000,
-    "transportAgency": "Star Voyages",
-    "guideId": "g11",
-    "guideName": "Pierre Ekwé"
-  },
-  {
-    "ref": "DT-2026-634",
-    "packId": "off_1781703222738",
-    "packName": "PLAGE DU GRAND BATANGA",
-    "userId": "usr_001",
-    "dates": "2026-06-10",
-    "status": "Confirmée",
-    "participants": 1,
-    "days": 15,
-    "totalPrice": 3114000,
-    "createdAt": "2026-06-18",
-    "hotelName": "Le Marcsons Hotels and Resorts",
-    "hotelPrice": 825000,
-    "transportLabel": "Douala → Kribi 09h00",
-    "transportPrice": 9000,
-    "transportAgency": "Trans-Cameroun",
-    "guideId": "g11",
-    "guideName": "Pierre Ekwé"
-  },
-  {
-    "ref": "DT-2026-699",
-    "packId": "p2",
-    "packName": "Mont Cameroun Trek",
-    "userId": "usr_1781609460247",
-    "dates": "2026-06-18",
-    "status": "Confirmée",
-    "participants": 1,
-    "days": 1,
-    "totalPrice": 362000,
-    "createdAt": "2026-06-18",
-    "hotelName": "L'Hôtel de l'Artisanat",
-    "hotelPrice": 35000,
-    "transportLabel": "Douala → Buea 08h30",
-    "transportPrice": 7000,
-    "transportAgency": "Star Voyages",
-    "guideId": "g11",
-    "guideName": "Pierre Ekwé"
-  },
-  {
-    "ref": "DT-2026-247",
-    "packId": "off_1781703222738",
-    "packName": "PLAGE DU GRAND BATANGA",
-    "userId": "usr_001",
-    "dates": "2026-06-18",
-    "status": "Confirmée",
-    "participants": 1,
-    "days": 1,
-    "totalPrice": 197000,
-    "createdAt": "2026-06-18",
-    "hotelName": "L'Hôtel de l'Artisanat",
-    "hotelPrice": 35000,
-    "transportLabel": "Douala → Kribi 07h00",
-    "transportPrice": 10000,
-    "transportAgency": "Star Voyages"
-  },
-  {
-    "ref": "DT-2026-294",
-    "packId": "p15",
-    "packName": "Site touristique d'ebogo",
-    "userId": "usr_001",
-    "dates": "2026-06-17",
-    "status": "Confirmée",
-    "participants": 1,
-    "days": 1,
-    "totalPrice": 195000,
-    "createdAt": "2026-06-17"
-  },
-  {
-    "ref": "DT-2026-616",
-    "packId": "p3",
-    "packName": "Yaoundé Luxe",
-    "userId": "usr_001",
-    "dates": "2026-06-26",
-    "status": "Confirmée",
-    "participants": 1,
-    "days": 1,
-    "totalPrice": 630000,
-    "createdAt": "2026-06-17"
-  },
-  {
-    "ref": "DT-2026-171",
-    "packId": "p2",
-    "packName": "Mont Cameroun Trek",
-    "userId": "usr_001",
-    "dates": "2026-06-17",
-    "status": "Confirmée",
-    "participants": 1,
-    "days": 1,
-    "totalPrice": 382000,
-    "createdAt": "2026-06-17"
-  },
-  {
-    "ref": "DT-2026-001",
-    "packId": "p8",
-    "packName": "Chutes de la Lobé",
-    "dates": "10–13 juin 2026",
-    "status": "Annulée",
-    "userId": "usr_001",
-    "participants": 2,
-    "days": 4,
-    "totalPrice": 240000,
-    "createdAt": "2026-05-20"
   }
 ]

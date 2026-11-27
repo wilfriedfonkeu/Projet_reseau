@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { Badge } from "@/src/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
-import { getPublicPacks, getActiveAgencies, CIRCUITS, DESTINATIONS, REVIEWS } from "@/src/lib/njangui-data";
+import { getPublicPacks, getActiveAgencies, DESTINATIONS, REVIEWS } from "@/src/lib/njangui-data";
 import { getCurrentUser } from "@/src/lib/auth-store";
 import { useAuth } from "@/src/lib/auth-context";
 import { useOffersLoader } from "@/src/hooks/use-offers-loader";
@@ -31,12 +31,12 @@ export default function HomePage() {
   const [searchBudget, setSearchBudget] = useState("");
   const [searchType, setSearchType] = useState("");
   const allPacks = getPublicPacks();
-  const filteredPacks = packCat === "Tous" ? allPacks : allPacks.filter((p) => p.category === packCat);
+  const publicPacks = allPacks.filter((p) => p.type !== "circuit");
+  const filteredPacks = packCat === "Tous" ? publicPacks : publicPacks.filter((p) => p.category === packCat);
 
-  const reserve = (id: string, isCircuit?: boolean) => {
+  const reserve = (id: string) => {
     const user = getCurrentUser();
     if (!user) { router.push("/auth?tab=signup"); return; }
-    if (isCircuit) { toast.info(t("circuit_login_hint")); router.push("/auth?tab=signup"); return; }
     router.push(`/reservation/${id}`);
   };
 
@@ -220,7 +220,7 @@ export default function HomePage() {
           </h2>
           <p className="text-muted-foreground mb-8">{t("our_circuits_desc")}</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {CIRCUITS.map((c) => (
+            {allPacks.filter((p) => p.type === "circuit").map((c) => (
               <Card key={c.id} className="overflow-hidden hover:shadow-xl transition-all p-0 bg-card group">
                 <div className="aspect-[4/3] overflow-hidden">
                   <img src={c.image} alt={c.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
@@ -232,9 +232,14 @@ export default function HomePage() {
                     <span className="text-muted-foreground flex items-center gap-1"><Clock size={12}/>{c.duration}</span>
                     <span className="font-bold text-[#EA580C]">{c.price.toLocaleString()} {t("fcfa")}</span>
                   </div>
-                  <Button size="sm" onClick={() => reserve(c.id, true)} className="w-full bg-[#EA580C] hover:bg-[#C2410C]">
-                    {t("reserve_btn")}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => router.push(`/offers/${c.id}`)} className="flex-1">
+                      {t("circuit_details")}
+                    </Button>
+                    <Button size="sm" onClick={() => reserve(c.id)} className="flex-1 bg-[#EA580C] hover:bg-[#C2410C]">
+                      {t("reserve_btn")}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}

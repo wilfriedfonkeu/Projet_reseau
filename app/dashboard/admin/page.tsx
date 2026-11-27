@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { DtMessenger } from "@/src/components/dt-messenger";
 import { useLang } from "@/src/lib/lang";
+import { downloadCommissionInvoicePdf } from "@/src/lib/pdf-documents";
 
 const itemDefs = [
   { key: "overview", labelKey: "sidebar_overview_admin", icon: LayoutDashboard },
@@ -224,6 +225,19 @@ export default function AdminDashboard() {
     });
   }, [partnerUsers, partnerSearch, partnerTypeFilter]);
   const [, forceUpdate] = useState(0);
+
+  const handleDownloadFinanceInvoice = async () => {
+    try {
+      await downloadCommissionInvoicePdf(
+        { revenue: 62400000, commissions: 8100000, toPay: 3600000 },
+        lang,
+      );
+      toast.success(t("pdf_generated_admin"));
+    } catch {
+      toast.error(t("pdf_error"));
+    }
+  };
+
   return (
     <DashboardShell title={t("admin_title")} items={items} active={active} onChange={setActive}>
       {active === "overview" && (
@@ -583,7 +597,7 @@ export default function AdminDashboard() {
             <div className="p-4 rounded-lg bg-[#EA580C]/10"><div className="text-xs text-muted-foreground">{t("finance_commissions")}</div><div className="text-xl font-bold text-[#EA580C]">8.1M {t("fcfa")}</div></div>
             <div className="p-4 rounded-lg bg-[#EA580C]/20"><div className="text-xs text-muted-foreground">{t("finance_to_pay")}</div><div className="text-xl font-bold">3.6M {t("fcfa")}</div></div>
           </div>
-          <Button className="bg-[#EA580C] hover:bg-[#C2410C]" onClick={() => toast.success(t("pdf_generated_admin"))}>{t("edit_pdf_btn")}</Button>
+          <Button className="bg-[#EA580C] hover:bg-[#C2410C]" onClick={handleDownloadFinanceInvoice}>{t("edit_pdf_btn")}</Button>
         </CardContent></Card>
       )}
 

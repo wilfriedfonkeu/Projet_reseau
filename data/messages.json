@@ -1,114 +1,35 @@
 [
   {
-    "id": "msg_1781698973072",
+    "id": "msg_1795269227139",
     "senderId": "usr_001",
-    "receiverId": "ag2",
-    "packId": "p2",
-    "text": "Bonjour, j'ai un problème.",
-    "createdAt": "2026-06-17T12:22:53.072Z",
-    "read": false
-  },
-  {
-    "id": "msg_1781699038049",
-    "senderId": "usr_001",
-    "receiverId": "ag2",
-    "packId": "p2",
-    "text": "Okay",
-    "createdAt": "2026-06-17T12:23:58.049Z",
-    "read": false
-  },
-  {
-    "id": "msg_1781699800708",
-    "senderId": "usr_020",
-    "receiverId": "usr_021",
-    "packId": "p2",
-    "text": "Bonjour",
-    "createdAt": "2026-06-17T12:36:40.708Z",
-    "read": true
-  },
-  {
-    "id": "msg_1781699843368",
-    "senderId": "usr_001",
-    "receiverId": "usr_021",
-    "packId": "p2",
-    "text": "Bonjour",
-    "createdAt": "2026-06-17T12:37:23.368Z",
-    "read": true
-  },
-  {
-    "id": "msg_1781702181014",
-    "senderId": "usr_001",
-    "receiverId": "usr_021",
-    "packId": "p2",
-    "text": "SALUT",
-    "createdAt": "2026-06-17T13:16:21.014Z",
-    "read": true
-  },
-  {
-    "id": "msg_1781702257598",
-    "senderId": "usr_001",
-    "receiverId": "ag3",
-    "packId": "p6",
-    "text": "Bonjour",
-    "createdAt": "2026-06-17T13:17:37.598Z",
-    "read": false
-  },
-  {
-    "id": "msg_1781702427783",
-    "senderId": "usr_001",
-    "receiverId": "ag3",
-    "packId": "p6",
-    "text": "bjr",
-    "createdAt": "2026-06-17T13:20:27.783Z",
-    "read": false
-  },
-  {
-    "id": "msg_1781769830998",
-    "senderId": "usr_001",
-    "receiverId": "usr_021",
-    "packId": "off_1781703222738",
-    "text": "bonjour je souhaite annuler une réservation",
-    "createdAt": "2026-06-18T08:03:50.998Z",
-    "read": false
-  },
-  {
-    "id": "msg_1795160969486",
-    "senderId": "usr_020",
-    "receiverId": "usr_099",
-    "text": "bonjour",
-    "createdAt": "2026-11-20T07:49:29.486Z",
-    "read": true
-  },
-  {
-    "id": "msg_1795162117876",
-    "senderId": "usr_020",
-    "receiverId": "partner_par1",
-    "text": "salut",
-    "createdAt": "2026-11-20T08:08:37.876Z",
-    "read": false
-  },
-  {
-    "id": "msg_1795186617174",
-    "senderId": "usr_1795013068012",
-    "receiverId": "usr_030",
-    "text": "bonjour",
-    "createdAt": "2026-11-20T14:56:57.174Z",
-    "read": false
-  },
-  {
-    "id": "msg_1795186663662",
-    "senderId": "usr_1795013068012",
     "receiverId": "usr_020",
-    "text": "bonjour",
-    "createdAt": "2026-11-20T14:57:43.662Z",
+    "text": "bonjour comment vous allez?",
+    "createdAt": "2026-11-21T13:53:47.139Z",
     "read": true
   },
   {
-    "id": "msg_1795186720886",
+    "id": "msg_1795529123584",
     "senderId": "usr_020",
-    "receiverId": "usr_1795013068012",
-    "text": "salut",
-    "createdAt": "2026-11-20T14:58:40.886Z",
+    "receiverId": "usr_001",
+    "text": "je vais bien et vous?",
+    "createdAt": "2026-11-24T14:05:23.584Z",
+    "read": true
+  },
+  {
+    "id": "msg_1795529149058",
+    "senderId": "usr_001",
+    "receiverId": "usr_020",
+    "text": "plutot pas mal",
+    "createdAt": "2026-11-24T14:05:49.058Z",
+    "read": true
+  },
+  {
+    "id": "msg_1795529208807",
+    "senderId": "usr_001",
+    "receiverId": "usr_020",
+    "packId": "p18",
+    "text": "bonjour",
+    "createdAt": "2026-11-24T14:06:48.807Z",
     "read": true
   }
 ]

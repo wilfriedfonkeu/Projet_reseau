@@ -24,20 +24,25 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const reservation = await request.json();
-  const store = await readStore();
+  const reservation = await request.json() as { ref?: string };
+  if (!reservation.ref) return NextResponse.json({ error: "ref_required" }, { status: 400 });
+  const store = await readStore() as Array<{ ref?: string }>;
+  if (store.some((r) => r.ref === reservation.ref)) {
+    return NextResponse.json({ error: "ref_exists" }, { status: 409 });
+  }
   store.unshift(reservation);
   await writeStore(store);
   return NextResponse.json({ success: true });
 }
 
-/** Met à jour une réservation (annulation). Crée aussi une surcharge pour les réservations intégrées. */
+/** Met à jour uniquement le statut d'une réservation (annulation). Les autres champs du billet sont immuables. */
 export async function PATCH(request: Request) {
-  const reservation = await request.json();
-  const store = await readStore() as Array<{ ref?: string }>;
-  const index = store.findIndex((r) => r.ref === reservation.ref);
-  if (index >= 0) store[index] = reservation;
-  else store.push(reservation);
+  const { ref, status } = await request.json() as { ref?: string; status?: string };
+  if (!ref || !status) return NextResponse.json({ error: "ref_and_status_required" }, { status: 400 });
+  const store = await readStore() as Array<{ ref?: string; status?: string }>;
+  const index = store.findIndex((r) => r.ref === ref);
+  if (index < 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  store[index] = { ...store[index], status };
   await writeStore(store);
   return NextResponse.json({ success: true });
 }

@@ -20,6 +20,7 @@ import { DtMessenger } from "@/src/components/dt-messenger";
 import { useAuth } from "@/src/lib/auth-context";
 import { getUsersByRoles, getUserById, type DtUser } from "@/src/lib/auth-store";
 import { toast } from "sonner";
+import { downloadRevenueStatementPdf } from "@/src/lib/pdf-documents";
 import { useLang } from "@/src/lib/lang";
 import { getGuideContactId, getPartnerContactId, getTouristContactId } from "@/src/lib/messaging-contacts";
 
@@ -171,17 +172,23 @@ export default function AgencyDashboard() {
   ];
 
   const agency = AGENCIES.find(a => a.name === authUser?.companyName);
-  const agencyId = agency?.id ?? "ag1";
+  const agencyId = agency?.id ?? `agency_${authUser?.id ?? "new"}`;
 
   useEffect(() => {
     if (!authUser || authUser.role !== "agency") {
       router.replace("/auth");
       return;
     }
-    setCompanyName(authUser.companyName ?? authUser.firstName);
-    setAgencyCity(authUser.city ?? "");
-    setAgencyPhone(authUser.phone);
-    Promise.all([loadSavedReservations(), loadGuides(), loadPartners(), loadSubscriptionPlans()]).then(() => {
+    const currentUser = authUser;
+    setCompanyName(currentUser.companyName ?? currentUser.firstName);
+    setAgencyCity(currentUser.city ?? "");
+    setAgencyPhone(currentUser.phone);
+    Promise.all([
+      loadSavedReservations(),
+      loadGuides(),
+      loadPartners(),
+      loadSubscriptionPlans(),
+    ]).then(() => {
       setAgencyGuides(getAllGuides().filter(g => g.agencyId === agencyId));
       setRegisteredGuides(getAllGuides());
       setPartners(getPartnersByAgency(agencyId));
@@ -532,6 +539,25 @@ export default function AgencyDashboard() {
     return matchSearch;
   });
   const filteredRevenueTotals = sumRevenues(filteredRevenues);
+
+  const handleExportRevenue = async () => {
+    try {
+      await downloadRevenueStatementPdf(
+        filteredRevenues.map(({ reservation, revenue }) => ({
+          reference: reservation.ref,
+          offer: reservation.packName,
+          date: reservation.createdAt,
+          total: revenue.total,
+        })),
+        filteredRevenueTotals,
+        authUser,
+        lang,
+      );
+      toast.success(t("pdf_generated"));
+    } catch {
+      toast.error(t("pdf_error"));
+    }
+  };
 
   // Statistiques du tableau de bord : uniquement les réservations confirmées de l'agence,
   // avec exactement le même calcul de revenu que dans « Mes revenus ».
@@ -1250,7 +1276,7 @@ export default function AgencyDashboard() {
                   </tfoot>
                 </Table>
               </div>
-              <Button variant="outline" onClick={() => toast.success(t("pdf_generated"))}>{t("export_pdf_btn")}</Button>
+              <Button variant="outline" onClick={handleExportRevenue}>{t("export_pdf_btn")}</Button>
             </>
           )}
         </CardContent></Card>
@@ -1383,7 +1409,10 @@ export default function AgencyDashboard() {
                     <Button
                       className={`w-full mt-5 ${isActive ? "bg-muted text-muted-foreground" : "bg-[#EA580C] hover:bg-[#C2410C] text-white"}`}
                       disabled={isActive}
-                      onClick={() => toast.success(`${t("subscription_activated")} ${p.label}`)}
+                      onClick={() => {
+                        const updated = updateProfile({ plan: p.id, verified: true });
+                        if (updated) toast.success(`${t("subscription_activated")} ${p.label}`);
+                      }}
                     >{isActive ? t("current_plan_btn") : t("subscribe_btn")}</Button>
                   </CardContent>
                 </Card>

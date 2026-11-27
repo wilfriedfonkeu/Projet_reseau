@@ -1,5 +1,25 @@
 [
   {
+    "id": "rev_1795268639343",
+    "packId": "c2",
+    "userId": "usr_001",
+    "name": "Aïcha Nkomo",
+    "avatar": "https://i.pravatar.cc/80?img=5",
+    "rating": 3,
+    "text": "J'ai adore la visite, juste un peu lent au niveau du transport\n",
+    "createdAt": "2026-11-21"
+  },
+  {
+    "id": "rev_1792433501361",
+    "packId": "p8",
+    "userId": "usr_001",
+    "name": "Dani Nkomo",
+    "avatar": "https://i.pravatar.cc/80?img=5",
+    "rating": 5,
+    "text": "j'aime bcp cette plateforme",
+    "createdAt": "2026-10-19"
+  },
+  {
     "id": "rev_1781788992605",
     "packId": "p2",
     "userId": "usr_001",
